@@ -1,0 +1,17 @@
+{
+  "name": "app",
+  "version": "1.0.50",
+  "scripts": {
+    "dev": "bun run src/main.ts",
+    "build": "NODE_ENV=production bun build src/main.ts --target=bun --outdir=out && echo '{ \"lastProcessedBlockHeight\": 112735992 }' > out/db.json",
+    "start": "bun out/main.js"
+  },
+  "dependencies": {
+    "near-api-js": "^3.0.2",
+    "oauth-1.0a": "^2.2.6"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "module": "src/index.js"
+}
