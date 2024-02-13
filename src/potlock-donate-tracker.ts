@@ -1,5 +1,4 @@
 import { nearQuery } from "./near-query/client";
-import { sendTweet } from "./twitter";
 
 type TweetArgs = {
   donorId: string;
@@ -35,20 +34,26 @@ export async function trackDonations(startBlockHeight: number, endBlockHeight: n
 
   console.log(potlockReceipts.length, "donate receipts found");
 
-  potlockReceipts.forEach(async (receipt: any) => {
-    const tweetArgs: TweetArgs = {
-      recipientId: receipt.parsedEvent.recipient_id,
-      donorId: receipt.parsedEvent.donor_id,
-      totalAmount: receipt.parsedEvent.total_amount,
-      ftId: receipt.parsedEvent.ft_id,
-      reffererId: receipt.parsedEvent.refferer_id,
-      referrerFee: receipt.parsedEvent.referrer_fee,
-    };
+  // return an array of tweet messages
+  const tweetMessages = await Promise.all(
+    potlockReceipts.map(async (receipt: any) => {
+      const tweetArgs: TweetArgs = {
+        recipientId: receipt.parsedEvent.recipient_id,
+        donorId: receipt.parsedEvent.donor_id,
+        totalAmount: receipt.parsedEvent.total_amount,
+        ftId: receipt.parsedEvent.ft_id,
+        reffererId: receipt.parsedEvent.refferer_id,
+        referrerFee: receipt.parsedEvent.referrer_fee,
+      };
 
-    const tweetMessage = await formatTweetMessage(tweetArgs);
-    await sendTweet(tweetMessage);
-  });
+      return await formatTweetMessage(tweetArgs);
+    })
+  );
+
+  // return the array of tweet messages
+  return tweetMessages;
 }
+
 async function formatTweetMessage(tweetArgs: TweetArgs) {
   const { donorId, recipientId, totalAmount, ftId, reffererId, referrerFee } = tweetArgs;
 
@@ -77,7 +82,7 @@ async function formatTweetMessage(tweetArgs: TweetArgs) {
   }
 
   // add project link
-  message += `https://app.potlock.org/?tab=project&projectId=${recipientId}`;
+  message += `https://bos.potlock.org/?tab=project&projectId=${recipientId}`;
 
   return message;
 }

@@ -2,13 +2,15 @@ import { connect } from "near-api-js";
 import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "./db/db-helpers";
 import { trackDonations } from "./potlock-donate-tracker";
 import { trackStatusChanges } from "./potlock-registry-tracker";
+import { sendTweet } from "./twitter";
+
+const near = await connect({
+  nodeUrl: "https://rpc.mainnet.near.org",
+  networkId: "mainnet",
+});
 
 // main event loop to process blocks and track donations and status changes recursively
 const processBlocks = async () => {
-  const near = await connect({
-    nodeUrl: "https://rpc.mainnet.near.org",
-    networkId: "mainnet",
-  });
   const provider = near.connection.provider;
 
   const statusResponse = await provider.status();
@@ -22,8 +24,14 @@ const processBlocks = async () => {
     const startBlockHeight = lastProcessedBlockHeight + 1;
     console.log("Processing blocks in range", startBlockHeight, "to", endBlockHeight);
 
-    await trackDonations(startBlockHeight, endBlockHeight);
-    await trackStatusChanges(startBlockHeight, endBlockHeight);
+    const donationTweets = (await trackDonations(startBlockHeight, endBlockHeight)) || [];
+    const statusChangeTweets = (await trackStatusChanges(startBlockHeight, endBlockHeight)) || [];
+
+    // send tweets using sendTweet make sure to wait 15 after each tweet and not send them asynchronously
+    for (const tweet of [...donationTweets, ...statusChangeTweets]) {
+      await sendTweet(tweet);
+      await new Promise((resolve) => setTimeout(resolve, 15000));
+    }
 
     await setLastProcessedBlockHeight(endBlockHeight);
 
@@ -32,12 +40,12 @@ const processBlocks = async () => {
     } else {
       console.log("Blocks synced, waiting...");
       // Wait 30 seconds before processing again
-      setTimeout(processBlocks, 30000);
+      setTimeout(() => processBlocks(), 30000);
     }
   } catch (error) {
     console.error("Error processing blocks, waiting...", error);
     // Wait 30 seconds before retrying
-    setTimeout(processBlocks, 30000);
+    setTimeout(() => processBlocks(), 30000);
   }
 };
 

@@ -1,7 +1,6 @@
 import { nearQuery } from "./near-query/client";
-import { sendTweet } from "./twitter";
 
-export type formatTweetArgs = {
+type TweetArgs = {
   projectId: string;
   status: string;
   reviewNotes?: string;
@@ -27,20 +26,22 @@ export async function trackStatusChanges(startBlockHeight: number, endBlockHeigh
 
   console.log(potlockReceipts.length, "status update receipts found");
 
-  potlockReceipts.forEach(async (receipt: any) => {
-    const tweetArgs: formatTweetArgs = {
-      projectId: receipt.parsedArgs.project_id,
-      status: receipt.parsedArgs.status,
-      reviewNotes: receipt.parsedArgs.review_notes,
-    };
+  const tweetMessages = await Promise.all(
+    potlockReceipts.map(async (receipt: any) => {
+      const tweetArgs: TweetArgs = {
+        projectId: receipt.parsedArgs.project_id,
+        status: receipt.parsedArgs.status,
+        reviewNotes: receipt.parsedArgs.review_notes,
+      };
 
-    const tweetMessage = await formatTweetMessage(tweetArgs);
-    //console.log(tweetMessage);
-    await sendTweet(tweetMessage);
-  });
+      return await formatTweetMessage(tweetArgs);
+    })
+  );
+
+  return tweetMessages;
 }
 
-async function formatTweetMessage(tweetArgs: formatTweetArgs) {
+async function formatTweetMessage(tweetArgs: TweetArgs) {
   const { projectId, status, reviewNotes } = tweetArgs;
 
   const projectTag = await nearQuery.lookupTwitterHandle(projectId).then((handle) => handle ?? projectId);
@@ -70,7 +71,7 @@ async function formatTweetMessage(tweetArgs: formatTweetArgs) {
   }
 
   // Append project link
-  message += `\nhttps://app.potlock.org/?tab=project&projectId=${projectId}`;
+  message += `\nhttps://bos.potlock.org/?tab=project&projectId=${projectId}`;
 
   return message;
 }
