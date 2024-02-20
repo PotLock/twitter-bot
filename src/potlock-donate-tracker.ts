@@ -9,15 +9,19 @@ type TweetArgs = {
   referrerFee?: string;
 };
 
+type TrackDonationsResponse = {
+  endBlockHeight: number;
+  tweetMessages: string[];
+};
+
 const FT_DECIMALS_MAP: { [key: string]: number } = {
   near: 24,
   usd: 6,
 };
 
-export async function trackDonations(startBlockHeight: number, endBlockHeight: number) {
+export async function trackDonations(startBlockHeight: number): Promise<TrackDonationsResponse | undefined> {
   const { errors, data: potlockReceipts } = await nearQuery.fetchContractReceipts({
     startBlockHeight,
-    endBlockHeight,
     receiver: "donate.potlock.near",
     methodName: "donate",
   });
@@ -33,6 +37,8 @@ export async function trackDonations(startBlockHeight: number, endBlockHeight: n
   }
 
   console.log(potlockReceipts.length, "donate receipts found");
+
+  const endBlockHeight = potlockReceipts[potlockReceipts.length - 1].block_height;
 
   // return an array of tweet messages
   const tweetMessages = await Promise.all(
@@ -51,7 +57,10 @@ export async function trackDonations(startBlockHeight: number, endBlockHeight: n
   );
 
   // return the array of tweet messages
-  return tweetMessages;
+  return {
+    endBlockHeight,
+    tweetMessages,
+  };
 }
 
 async function formatTweetMessage(tweetArgs: TweetArgs) {

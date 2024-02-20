@@ -1,12 +1,13 @@
 export const potlockReceipts = `
-  query PotlockReceipts($receiver: String!, $methodName: String!, $startBlockHeight: numeric!, $endBlockHeight: numeric!) {
+  query PotlockReceipts($receiver: String!, $methodName: String!, $startBlockHeight: numeric!) {
     markeljan_near_potlock_actions_v3_receipt(
       where: {
         receiver: {_eq: $receiver},
         method_name: {_eq: $methodName},
-        block_height: {_gte: $startBlockHeight, _lte: $endBlockHeight},
+        block_height: {_gte: $startBlockHeight},
         status: {_eq: "SUCCESS"}
       }
+      order_by: {block_height: asc}
     ) {
       block_height
       gas

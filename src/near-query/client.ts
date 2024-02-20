@@ -6,18 +6,16 @@ class NearQuery {
     receiver,
     methodName,
     startBlockHeight,
-    endBlockHeight,
   }: {
     receiver: string;
     methodName: string;
     startBlockHeight: number;
-    endBlockHeight: number;
   }): Promise<GraphQLResponse> {
     const { errors, data } = await fetchGraphQL({
       query: potlockReceipts,
       hasuraRole: "markeljan_near",
       operationName: "PotlockReceipts",
-      variables: { receiver, methodName, startBlockHeight, endBlockHeight },
+      variables: { receiver, methodName, startBlockHeight },
     });
 
     if (errors) {

@@ -7,7 +7,6 @@
     "start": "bun out/main.js"
   },
   "dependencies": {
-    "near-api-js": "^3.0.2",
     "oauth-1.0a": "^2.2.6"
   },
   "devDependencies": {

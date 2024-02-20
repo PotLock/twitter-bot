@@ -6,10 +6,14 @@ type TweetArgs = {
   reviewNotes?: string;
 };
 
-export async function trackStatusChanges(startBlockHeight: number, endBlockHeight: number) {
+type TrackStatusChangesResponse = {
+  endBlockHeight: number;
+  tweetMessages: string[];
+};
+
+export async function trackStatusChanges(startBlockHeight: number): Promise<TrackStatusChangesResponse | undefined> {
   const { errors, data: potlockReceipts } = await nearQuery.fetchContractReceipts({
     startBlockHeight: startBlockHeight,
-    endBlockHeight: endBlockHeight,
     receiver: "registry.potlock.near",
     methodName: "admin_set_project_status",
   });
@@ -25,6 +29,7 @@ export async function trackStatusChanges(startBlockHeight: number, endBlockHeigh
   }
 
   console.log(potlockReceipts.length, "status update receipts found");
+  const endBlockHeight = potlockReceipts[potlockReceipts.length - 1]?.block_height;
 
   const tweetMessages = await Promise.all(
     potlockReceipts.map(async (receipt: any) => {
@@ -38,7 +43,10 @@ export async function trackStatusChanges(startBlockHeight: number, endBlockHeigh
     })
   );
 
-  return tweetMessages;
+  return {
+    endBlockHeight,
+    tweetMessages,
+  };
 }
 
 async function formatTweetMessage(tweetArgs: TweetArgs) {
