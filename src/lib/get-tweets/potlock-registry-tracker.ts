@@ -76,7 +76,8 @@ async function formatTweetMessage(tweetArgs: TweetArgs) {
 
   // Append review notes if present
   if (reviewNotes) {
-    message += `\nReview notes: "${shortenMessage(reviewNotes, 150)}"`;
+    const shortendedMessage = shortenMessage(reviewNotes, 150);
+    message += `\nReview notes: "${shortendedMessage}"`;
   }
 
   // Append project link

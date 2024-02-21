@@ -48,6 +48,7 @@ type PotFactoryReceipt = {
 
 async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
   const { method_name, sender, receiver, block_height, deposit, parsedArgs } = receipt;
+  const parsedMessage = parsedArgs.message;
 
   const formattedDeposit = formatAmount(deposit, "near");
 
@@ -57,13 +58,13 @@ async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
     case "donate":
       const donorTag = (await nearQuery.lookupTwitterHandle(sender)) || sender;
       const recipientTag = (await nearQuery.lookupTwitterHandle(receiver)) || receiver;
-      const donationMessage = shortenMessage(parsedArgs.message, 150);
 
       message += `🫕 Pot Donation Alert! 🎉\n`;
       message += `Donor: ${donorTag}\n`;
       message += `Recipient: ${recipientTag}\n`;
       message += `Amount: ${formattedDeposit} NEAR\n`;
-      if (donationMessage) {
+      if (parsedMessage) {
+        const donationMessage = shortenMessage(parsedMessage, 150);
         message += `Message: "${donationMessage}"\n`;
       }
       break;
@@ -80,23 +81,24 @@ async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
       break;
 
     case "assert_can_apply_callback":
-      const applicationMessage = shortenMessage(parsedArgs.message, 150);
-
       message += `📋 New project application for ${receiver}\n`;
       message += `Project: ${sender}\n`; // Assuming sender is the project id
-      if (applicationMessage) {
+      if (parsedMessage) {
+        const applicationMessage = shortenMessage(parsedMessage, 150);
         message += `Message: "${applicationMessage}"\n`;
       }
       break;
 
     case "new":
-      const potName = parsedArgs.pot_name || "Unnamed Pot";
-      const description = shortenMessage(parsedArgs.pot_description, 150) || "No description provided.";
+      const potName = parsedArgs.pot_name || "";
       const chefTag = (await nearQuery.lookupTwitterHandle(parsedArgs.chef)) || parsedArgs.chef;
       const maxProjects = parsedArgs.max_projects || "No limit";
-
       message += `🫕 New Pot Created: ${potName} 🎊\n`;
-      message += `Description: "${description}"\n`;
+      const parsedDescription = parsedArgs.pot_description;
+      if (parsedDescription) {
+        const description = shortenMessage(parsedDescription, 150);
+        message += `Description: "${description}"\n`;
+      }
       message += `Managed by: ${chefTag}\n`;
       message += `Maximum Projects: ${maxProjects}\n`;
       break;
@@ -106,7 +108,7 @@ async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
       break;
   }
 
-  message += `More details: https://bos.potlock.org/?tab=pot&potId=${receiver}`;
+  message += `https://bos.potlock.org/?tab=pot&potId=${receiver}`;
 
   return message;
 }
