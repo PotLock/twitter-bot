@@ -37,6 +37,7 @@ const processBlocks = async () => {
     const newProcessedBlockHeight = Math.max(
       donationEndBlockHeight,
       statusChangeEndBlockHeight,
+      potfactoryEndBlockHeight,
       lastProcessedBlockHeight
     );
 
