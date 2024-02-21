@@ -50,6 +50,9 @@ async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
   const { method_name, sender, receiver, block_height, deposit, parsedArgs } = receipt;
   const parsedMessage = parsedArgs.message;
 
+  const parsedProjectId = parsedArgs.project_id;
+  const projectTag = (await nearQuery.lookupTwitterHandle(parsedProjectId)) || parsedProjectId;
+
   const formattedDeposit = formatAmount(deposit, "near");
 
   let message = "";
@@ -61,8 +64,9 @@ async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
 
       message += `🫕 Pot Donation Alert! 🎉\n`;
       message += `Donor: ${donorTag}\n`;
-      message += `Recipient: ${recipientTag}\n`;
+      message += `Project: ${projectTag}\n`;
       message += `Amount: ${formattedDeposit} NEAR\n`;
+      message += `Pot: ${recipientTag}\n`;
       if (parsedMessage) {
         const donationMessage = shortenMessage(parsedMessage, 150);
         message += `Message: "${donationMessage}"\n`;
@@ -70,7 +74,6 @@ async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
       break;
 
     case "chef_set_application_status":
-      const projectTag = (await nearQuery.lookupTwitterHandle(parsedArgs.project_id)) || parsedArgs.project_id;
       const status = parsedArgs.status;
       const statusEmoji = status === "Approved" ? "✅" : status === "Rejected" ? "❌" : "🔔";
 
@@ -91,7 +94,7 @@ async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
 
     case "new":
       const potName = parsedArgs.pot_name || "";
-      const chefTag = (await nearQuery.lookupTwitterHandle(parsedArgs.chef)) || parsedArgs.chef;
+      const parsedChef = parsedArgs.chef;
       const maxProjects = parsedArgs.max_projects || "No limit";
       message += `🫕 New Pot Created: ${potName} 🎊\n`;
       const parsedDescription = parsedArgs.pot_description;
@@ -99,8 +102,11 @@ async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
         const description = shortenMessage(parsedDescription, 150);
         message += `Description: "${description}"\n`;
       }
-      message += `Managed by: ${chefTag}\n`;
-      message += `Maximum Projects: ${maxProjects}\n`;
+      if (parsedChef) {
+        const chefTag = (await nearQuery.lookupTwitterHandle(parsedChef)) || parsedChef;
+        message += `Chef: ${chefTag}\n`;
+      }
+      message += `Project Limit: ${maxProjects}\n`;
       break;
 
     default:
