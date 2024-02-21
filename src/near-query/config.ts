@@ -7,19 +7,17 @@ export type GraphQLResponse<T = any> = {
 
 export async function fetchGraphQL({
   query,
-  hasuraRole,
   operationName,
   variables = {},
 }: {
   query: string;
-  hasuraRole: string;
   operationName: string;
   variables: Record<string, any>;
 }): Promise<GraphQLResponse> {
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
-      "X-Hasura-Role": hasuraRole,
+      "X-Hasura-Role": "markeljan_near",
     },
     body: JSON.stringify({
       query,

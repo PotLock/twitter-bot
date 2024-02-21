@@ -1,4 +1,5 @@
-import { nearQuery } from "./near-query/client";
+import { nearQuery } from "../../near-query/client";
+import { shortenMessage } from "../utils";
 
 type TweetArgs = {
   projectId: string;
@@ -13,6 +14,7 @@ type TrackStatusChangesResponse = {
 
 export async function trackStatusChanges(startBlockHeight: number): Promise<TrackStatusChangesResponse | undefined> {
   const { errors, data: potlockReceipts } = await nearQuery.fetchContractReceipts({
+    queryName: "potlockReceipts",
     startBlockHeight: startBlockHeight,
     receiver: "registry.potlock.near",
     methodName: "admin_set_project_status",
@@ -28,7 +30,6 @@ export async function trackStatusChanges(startBlockHeight: number): Promise<Trac
     return;
   }
 
-  console.log(potlockReceipts.length, "status update receipts found");
   const endBlockHeight = potlockReceipts[potlockReceipts.length - 1]?.block_height;
 
   const tweetMessages = await Promise.all(
@@ -75,7 +76,7 @@ async function formatTweetMessage(tweetArgs: TweetArgs) {
 
   // Append review notes if present
   if (reviewNotes) {
-    message += `\nReview notes: "${reviewNotes}"`;
+    message += `\nReview notes: "${shortenMessage(reviewNotes, 150)}"`;
   }
 
   // Append project link

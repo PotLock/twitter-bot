@@ -1,4 +1,5 @@
-import { nearQuery } from "./near-query/client";
+import { nearQuery } from "../../near-query/client";
+import { formatAmount } from "../utils";
 
 type TweetArgs = {
   donorId: string;
@@ -14,13 +15,9 @@ type TrackDonationsResponse = {
   tweetMessages: string[];
 };
 
-const FT_DECIMALS_MAP: { [key: string]: number } = {
-  near: 24,
-  usd: 6,
-};
-
 export async function trackDonations(startBlockHeight: number): Promise<TrackDonationsResponse | undefined> {
   const { errors, data: potlockReceipts } = await nearQuery.fetchContractReceipts({
+    queryName: "potlockReceipts",
     startBlockHeight,
     receiver: "donate.potlock.near",
     methodName: "donate",
@@ -35,8 +32,6 @@ export async function trackDonations(startBlockHeight: number): Promise<TrackDon
     console.log("No new donate receipts found");
     return;
   }
-
-  console.log(potlockReceipts.length, "donate receipts found");
 
   const endBlockHeight = potlockReceipts[potlockReceipts.length - 1].block_height;
 
@@ -78,7 +73,7 @@ async function formatTweetMessage(tweetArgs: TweetArgs) {
   const formattedTotal = formatAmount(totalAmount, ftId);
 
   // Construct the base message
-  let message = `🎉 New Donation Alert! 🎉\n`;
+  let message = `🎉 Project Donation Alert! 🎉\n`;
   message += `Donor: ${donorTag}\n`;
   message += `Recipient: ${recipientTag}\n`;
   message += `Amount: ${formattedTotal} ${ftId.toUpperCase()}\n`;
@@ -95,9 +90,3 @@ async function formatTweetMessage(tweetArgs: TweetArgs) {
 
   return message;
 }
-
-// helper
-const formatAmount = (amount: string, ftId: string) => {
-  const decimals = FT_DECIMALS_MAP[ftId] ?? 24;
-  return (parseInt(amount) / 10 ** decimals).toFixed(2);
-};

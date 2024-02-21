@@ -1,20 +1,34 @@
 import { GraphQLResponse, fetchGraphQL } from "./config";
-import { potlockReceipts } from "./queries";
+import { potfactoryReceipts, potlockReceipts } from "./queries";
+
+type QueryName = "potlockReceipts" | "potfactoryReceipts";
+
+const querieData: Record<QueryName, Record<string, string>> = {
+  potlockReceipts: {
+    query: potlockReceipts,
+    operationName: "PotlockReceipts",
+  },
+  potfactoryReceipts: {
+    query: potfactoryReceipts,
+    operationName: "PotfactoryReceipts",
+  },
+};
 
 class NearQuery {
   async fetchContractReceipts({
+    queryName,
     receiver,
     methodName,
     startBlockHeight,
   }: {
-    receiver: string;
-    methodName: string;
+    queryName: QueryName;
+    receiver?: string;
+    methodName?: string;
     startBlockHeight: number;
   }): Promise<GraphQLResponse> {
     const { errors, data } = await fetchGraphQL({
-      query: potlockReceipts,
-      hasuraRole: "markeljan_near",
-      operationName: "PotlockReceipts",
+      query: querieData[queryName].query,
+      operationName: querieData[queryName].operationName,
       variables: { receiver, methodName, startBlockHeight },
     });
 

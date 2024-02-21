@@ -1,6 +1,7 @@
 import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "./db/db-helpers";
-import { trackDonations } from "./potlock-donate-tracker";
-import { trackStatusChanges } from "./potlock-registry-tracker";
+import { trackDonations } from "./lib/get-tweets/potlock-donate-tracker";
+import { trackStatusChanges } from "./lib/get-tweets/potlock-registry-tracker";
+import { trackPotfactory } from "./lib/get-tweets/potfactory-tracker";
 import { sendTweet } from "./twitter";
 
 // main event loop to process blocks and track donations and status changes recursively
@@ -10,17 +11,27 @@ const processBlocks = async () => {
   try {
     const startBlockHeight = lastProcessedBlockHeight + 1;
 
-    const trackDonationsResponse = await trackDonations(startBlockHeight);
-    const { tweetMessages: donationTweets, endBlockHeight: donationEndBlockHeight } = trackDonationsResponse ?? {
+    const trackDonationsResponse = (await trackDonations(startBlockHeight)) ?? {
+      tweetMessages: [],
+      endBlockHeight: 0,
+    };
+    const statusChangeResponse = (await trackStatusChanges(startBlockHeight)) ?? {
       tweetMessages: [],
       endBlockHeight: 0,
     };
 
-    const statusChangeResponse = await trackStatusChanges(startBlockHeight);
-    const { tweetMessages: statusChangeTweets, endBlockHeight: statusChangeEndBlockHeight } = statusChangeResponse ?? {
+    const potfactoryResponse = (await trackPotfactory(startBlockHeight)) ?? {
       tweetMessages: [],
       endBlockHeight: 0,
     };
+
+    const { tweetMessages: donationTweets, endBlockHeight: donationEndBlockHeight } = trackDonationsResponse;
+    const { tweetMessages: statusChangeTweets, endBlockHeight: statusChangeEndBlockHeight } = statusChangeResponse;
+    const { tweetMessages: potfactoryTweets, endBlockHeight: potfactoryEndBlockHeight } = potfactoryResponse;
+
+    donationTweets.length && console.log("found", donationTweets.length, "donation tweets");
+    statusChangeTweets.length && console.log("found", statusChangeTweets.length, "status change tweets");
+    potfactoryTweets.length && console.log("found", potfactoryTweets.length, "potfactory tweets");
 
     // get the end block height from the last processed block height, donation end block height, and status change end block height
     const newProcessedBlockHeight = Math.max(
@@ -30,9 +41,9 @@ const processBlocks = async () => {
     );
 
     // send tweets using sendTweet make sure to wait 15 after each tweet and not send them asynchronously
-    for (const tweet of [...donationTweets, ...statusChangeTweets]) {
+    for (const tweet of [...donationTweets, ...statusChangeTweets, ...potfactoryTweets]) {
       await sendTweet(tweet);
-      await new Promise((resolve) => setTimeout(resolve, 15000));
+      await new Promise((resolve) => setTimeout(resolve));
     }
 
     await setLastProcessedBlockHeight(newProcessedBlockHeight);
