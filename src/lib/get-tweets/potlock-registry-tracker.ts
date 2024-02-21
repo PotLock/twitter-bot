@@ -26,7 +26,7 @@ export async function trackStatusChanges(startBlockHeight: number): Promise<Trac
   }
 
   if (!potlockReceipts.length) {
-    console.log("No new status update receipts found");
+    // console.log("No new status update receipts found");
     return;
   }
 

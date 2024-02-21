@@ -18,7 +18,7 @@ export async function trackPotfactory(startBlockHeight: number): Promise<TrackSt
   }
 
   if (!potfactoryReceipts.length) {
-    console.log("No new status update receipts found");
+    // console.log("No new status update receipts found");
     return;
   }
 

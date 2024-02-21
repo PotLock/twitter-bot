@@ -29,7 +29,7 @@ export async function trackDonations(startBlockHeight: number): Promise<TrackDon
   }
 
   if (!potlockReceipts.length) {
-    console.log("No new donate receipts found");
+    // console.log("No new donate receipts found");
     return;
   }
 

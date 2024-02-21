@@ -29,9 +29,9 @@ const processBlocks = async () => {
     const { tweetMessages: statusChangeTweets, endBlockHeight: statusChangeEndBlockHeight } = statusChangeResponse;
     const { tweetMessages: potfactoryTweets, endBlockHeight: potfactoryEndBlockHeight } = potfactoryResponse;
 
-    donationTweets.length && console.log("found", donationTweets.length, "donation tweets");
-    statusChangeTweets.length && console.log("found", statusChangeTweets.length, "status change tweets");
-    potfactoryTweets.length && console.log("found", potfactoryTweets.length, "potfactory tweets");
+    // donationTweets.length && console.log("found", donationTweets.length, "donation tweets");
+    // statusChangeTweets.length && console.log("found", statusChangeTweets.length, "status change tweets");
+    // potfactoryTweets.length && console.log("found", potfactoryTweets.length, "potfactory tweets");
 
     // get the end block height from the last processed block height, donation end block height, and status change end block height
     const newProcessedBlockHeight = Math.max(
@@ -50,7 +50,7 @@ const processBlocks = async () => {
 
     await setLastProcessedBlockHeight(newProcessedBlockHeight);
 
-    console.log("Receipts synced, waiting...");
+    // console.log("Receipts synced, waiting...");
     // Wait 30 seconds before processing again
     setTimeout(() => processBlocks(), 30000);
   } catch (error) {
