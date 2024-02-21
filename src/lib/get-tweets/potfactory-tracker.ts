@@ -1,8 +1,6 @@
 import { nearQuery } from "../../near-query/client";
 import { formatAmount, shortenMessage } from "../utils";
 
-type PotFactoryMethods = "donate" | "chef_set_application_status" | "new" | "assert_can_apply_callback";
-
 type TrackStatusChangesResponse = {
   endBlockHeight: number;
   tweetMessages: string[];
@@ -28,7 +26,6 @@ export async function trackPotfactory(startBlockHeight: number): Promise<TrackSt
 
   const tweetMessages = await Promise.all(
     potfactoryReceipts.map(async (receipt: any) => {
-      // console.log("unparsed potfactory receipt", receipt);
       const tweetMessage = await formatTweetMessage(receipt);
       return tweetMessage;
     })
