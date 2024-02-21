@@ -16,7 +16,9 @@ const oauth = new OAuth({
   },
 });
 
-export async function sendTweet(tweetMessage: string) {
+type TweetStatus = "rate-limited" | "success" | "duplicate" | "error" | "simulated" | "unknown";
+
+export async function sendTweet(tweetMessage: string): Promise<TweetStatus> {
   const request_data = {
     url: "https://api.twitter.com/2/tweets",
     method: "POST",
@@ -24,7 +26,7 @@ export async function sendTweet(tweetMessage: string) {
 
   if (NODE_ENV === "development") {
     console.log("Simulating Tweet:\n", tweetMessage);
-    return;
+    return "simulated";
   } else {
     try {
       const response = await fetch(request_data.url, {
@@ -37,8 +39,20 @@ export async function sendTweet(tweetMessage: string) {
       });
       const body = await response.json();
       console.log(body);
+
+      if (body.data) {
+        return "success";
+      }
+      if (body.status === 429) {
+        return "rate-limited";
+      }
+      if (body.status === 403) {
+        return "duplicate";
+      }
+      return "unknown";
     } catch (e) {
       console.log(e);
+      return "error";
     }
   }
 }

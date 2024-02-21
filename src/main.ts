@@ -43,9 +43,15 @@ const processBlocks = async () => {
 
     // send tweets using sendTweet make sure to wait 15 after each tweet and not send them asynchronously
     for (const tweet of [...donationTweets, ...statusChangeTweets, ...potfactoryTweets]) {
-      await sendTweet(tweet);
-      // 15 seconds between tweets to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 15000));
+      const tweetStatus = await sendTweet(tweet);
+
+      if (tweetStatus === "rate-limited" || tweetStatus === "error" || tweetStatus === "unknown") {
+        // wait 15 minutes before processing again
+        await new Promise((resolve) => setTimeout(resolve, 15 * 60 * 1000));
+      } else {
+        // 15 seconds between tweets
+        await new Promise((resolve) => setTimeout(resolve, 15000));
+      }
     }
 
     await setLastProcessedBlockHeight(newProcessedBlockHeight);
