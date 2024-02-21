@@ -1,5 +1,4 @@
-const dirPath = import.meta.dirname;
-const db = Bun.file(`${dirPath}/db.json`);
+const db = await getOrCreateDB();
 const data = await db.json();
 
 export async function getLastProcessedBlockHeight(): Promise<number> {
@@ -18,4 +17,17 @@ export async function setLastProcessedBlockHeight(blockHeight: number) {
   } catch (err) {
     console.error(err);
   }
+}
+
+async function getOrCreateDB() {
+  const filePath = import.meta.dirname + "/db.json";
+  if (!(await Bun.file(filePath).exists())) {
+    await Bun.write(
+      Bun.file(filePath),
+      JSON.stringify({
+        lastProcessedBlockHeight: 0,
+      })
+    );
+  }
+  return Bun.file(filePath);
 }
