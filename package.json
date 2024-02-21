@@ -3,7 +3,7 @@
   "version": "1.0.50",
   "scripts": {
     "dev": "bun run src/main.ts",
-    "build": "NODE_ENV=production bun build src/main.ts --target=bun --outdir=out && echo '{ \"lastProcessedBlockHeight\": 112735992 }' > out/db.json",
+    "build": "NODE_ENV=production bun build src/main.ts --target=bun --outdir=out && cat src/db/db.json > out/db.json",
     "start": "bun out/main.js"
   },
   "dependencies": {
