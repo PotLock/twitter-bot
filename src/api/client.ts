@@ -1,5 +1,5 @@
-import { GraphQLResponse, fetchGraphQL } from "@/lib/data/graphql/fetch";
-import { QueryName, queryMap } from "@/lib/data/graphql/queries";
+import { GraphQLResponse, fetchGraphQL } from "@/api/graphql/fetch";
+import { QueryName, queryMap } from "@/api/graphql/queries";
 
 export default class NearQuery {
   async fetchContractReceipts({

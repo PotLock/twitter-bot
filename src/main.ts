@@ -1,10 +1,10 @@
-import NearQuery from "@/lib/data/client";
-import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "@/lib/db/db-helpers";
+import NearQuery from "@/api/client";
+import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "@/db/db-helpers";
 import { trackDonate } from "@/lib/trackers/donate-tracker";
 import { trackPotfactory } from "@/lib/trackers/potfactory-tracker";
 import { trackRegistry } from "@/lib/trackers/registry-tracker";
-import { BOT_ERROR_DELAY, BOT_INTERVAL, TWEET_ERROR_DELAY, TWEET_INTERVAL } from "@/lib/config";
 import { sendTweet } from "@/lib/twitter";
+import { BOT_INTERVAL, BOT_ERROR_DELAY, TWEET_INTERVAL, TWEET_ERROR_DELAY } from "@/config";
 
 export const nearQuery = new NearQuery();
 
@@ -33,26 +33,24 @@ async function main() {
     );
 
     console.log(
-      `${startBlockHeight} > ${newProcessedBlockHeight} ${donateTweets.length} donate | ${registryTweets.length} registry | ${potfactoryTweets.length} potfactory`
+      `${startBlockHeight} - ${newProcessedBlockHeight} donate: ${donateTweets.length} | registry: ${registryTweets.length} | potfactory: ${potfactoryTweets.length}`
     );
 
     for (const tweet of [...donateTweets, ...registryTweets, ...potfactoryTweets]) {
       const tweetStatus = await sendTweet(tweet);
-
       if (tweetStatus === "rate-limited" || tweetStatus === "error" || tweetStatus === "unknown") {
-        await new Promise((resolve) => setTimeout(resolve, TWEET_ERROR_DELAY));
+        await Bun.sleep(TWEET_ERROR_DELAY);
       } else {
-        await new Promise((resolve) => setTimeout(resolve, TWEET_INTERVAL));
+        await Bun.sleep(TWEET_INTERVAL);
       }
     }
 
     await setLastProcessedBlockHeight(newProcessedBlockHeight);
-
-    await new Promise((resolve) => setTimeout(resolve, BOT_INTERVAL));
+    await Bun.sleep(BOT_INTERVAL);
     await main();
   } catch (error) {
     console.error("Error processing receipts, waiting...", error);
-    await new Promise((resolve) => setTimeout(resolve, BOT_ERROR_DELAY));
+    await Bun.sleep(BOT_ERROR_DELAY);
     await main();
   }
 }

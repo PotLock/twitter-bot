@@ -39,7 +39,7 @@ package-lock.json
 **/*.bun
 
 # dev db
-src/lib/db/db.json
+src/db/db.json
 
 # out
 out/
