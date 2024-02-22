@@ -6,8 +6,6 @@ const TWITTER_CONSUMER_SECRET = `${Bun.env.TWITTER_CONSUMER_SECRET}`;
 const TWITTER_ACCESS_TOKEN = `${Bun.env.TWITTER_ACCESS_TOKEN}`;
 const TWITTER_TOKEN_SECRET = `${Bun.env.TWITTER_TOKEN_SECRET}`;
 
-const NODE_ENV = Bun.env.NODE_ENV;
-
 const oauth = new OAuth({
   consumer: { key: TWITTER_CONSUMER_KEY, secret: TWITTER_CONSUMER_SECRET },
   signature_method: "HMAC-SHA1",
@@ -24,10 +22,7 @@ export async function sendTweet(tweetMessage: string): Promise<TweetStatus> {
     method: "POST",
   };
 
-  if (NODE_ENV === "development") {
-    console.log("Simulating Tweet:\n", tweetMessage);
-    return "simulated";
-  } else {
+  if (Bun.env.NODE_ENV === "production") {
     try {
       const response = await fetch(request_data.url, {
         method: request_data.method,
@@ -54,5 +49,8 @@ export async function sendTweet(tweetMessage: string): Promise<TweetStatus> {
       console.log(e);
       return "error";
     }
+  } else {
+    console.log("Simulating Tweet:\n", tweetMessage);
+    return "simulated";
   }
 }

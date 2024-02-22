@@ -2,9 +2,9 @@
   "name": "app",
   "version": "1.0.50",
   "scripts": {
-    "dev": "bun run src/main.ts",
+    "dev": "bun src/main.ts",
     "build": "NODE_ENV=production bun build src/main.ts --target=bun --outdir=out",
-    "start": "bun out/main.js"
+    "start": "NODE_ENV=production bun out/main.js"
   },
   "dependencies": {
     "oauth-1.0a": "^2.2.6"
