@@ -4,6 +4,11 @@ import { trackStatusChanges } from "./lib/get-tweets/potlock-registry-tracker";
 import { trackPotfactory } from "./lib/get-tweets/potfactory-tracker";
 import { sendTweet } from "./twitter";
 
+const BOT_INTERVAL = 30 * 1000; // 30 seconds
+const BOT_ERROR_DELAY = 60 * 1000; // 1 minute
+const TWEET_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const TWEET_ERROR_DELAY = 30 * 60 * 1000; // 30 minutes
+
 // main event loop to process blocks and track donations and status changes recursively
 const processBlocks = async () => {
   const lastProcessedBlockHeight = await getLastProcessedBlockHeight();
@@ -29,10 +34,6 @@ const processBlocks = async () => {
     const { tweetMessages: statusChangeTweets, endBlockHeight: statusChangeEndBlockHeight } = statusChangeResponse;
     const { tweetMessages: potfactoryTweets, endBlockHeight: potfactoryEndBlockHeight } = potfactoryResponse;
 
-    // donationTweets.length && console.log("found", donationTweets.length, "donation tweets");
-    // statusChangeTweets.length && console.log("found", statusChangeTweets.length, "status change tweets");
-    // potfactoryTweets.length && console.log("found", potfactoryTweets.length, "potfactory tweets");
-
     // get the end block height from the last processed block height, donation end block height, and status change end block height
     const newProcessedBlockHeight = Math.max(
       donationEndBlockHeight,
@@ -41,28 +42,29 @@ const processBlocks = async () => {
       lastProcessedBlockHeight
     );
 
+    console.log(
+      `${startBlockHeight} -> ${newProcessedBlockHeight} Tweets: ${donationTweets.length} donations | ${statusChangeTweets.length} status changes | ${potfactoryTweets.length} potfactory`
+    );
+
     // send tweets using sendTweet make sure to wait 15 after each tweet and not send them asynchronously
     for (const tweet of [...donationTweets, ...statusChangeTweets, ...potfactoryTweets]) {
       const tweetStatus = await sendTweet(tweet);
 
       if (tweetStatus === "rate-limited" || tweetStatus === "error" || tweetStatus === "unknown") {
-        // wait 15 minutes before processing again
-        await new Promise((resolve) => setTimeout(resolve, 15 * 60 * 1000));
+        await new Promise((resolve) => setTimeout(resolve, TWEET_ERROR_DELAY));
       } else {
-        // 15 seconds between tweets
-        await new Promise((resolve) => setTimeout(resolve, 15000));
+        await new Promise((resolve) => setTimeout(resolve, TWEET_INTERVAL));
       }
     }
 
     await setLastProcessedBlockHeight(newProcessedBlockHeight);
 
-    // console.log("Receipts synced, waiting...");
-    // Wait 30 seconds before processing again
-    setTimeout(() => processBlocks(), 30000);
+    await new Promise((resolve) => setTimeout(resolve, BOT_INTERVAL));
+    await processBlocks();
   } catch (error) {
     console.error("Error processing receipts, waiting...", error);
-    // Wait 30 seconds before retrying
-    setTimeout(() => processBlocks(), 30000);
+    await new Promise((resolve) => setTimeout(resolve, BOT_ERROR_DELAY));
+    await processBlocks();
   }
 };
 
