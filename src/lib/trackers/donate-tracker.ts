@@ -1,13 +1,12 @@
-import { nearQuery } from "../../near-query/client";
-import { TrackerResponse } from "../types";
-import { formatAmount } from "../utils";
+import { nearQuery } from "@/main";
+import { TrackerResponse, formatAmount } from "@/lib/trackers/utils";
 
 type DonateTweetArgs = {
   donorId: string;
   recipientId: string;
   totalAmount: string;
   ftId: string;
-  reffererId?: string;
+  referrerId?: string;
   referrerFee?: string;
 };
 
@@ -44,7 +43,7 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
         donorId: receipt.parsedEvent.donor_id,
         totalAmount: receipt.parsedEvent.total_amount,
         ftId: receipt.parsedEvent.ft_id,
-        reffererId: receipt.parsedEvent.refferer_id,
+        referrerId: receipt.parsedEvent.referer_id,
         referrerFee: receipt.parsedEvent.referrer_fee,
       };
 
@@ -59,14 +58,12 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
 }
 
 async function formatTweetMessage(tweetArgs: DonateTweetArgs) {
-  const { donorId, recipientId, totalAmount, ftId, reffererId, referrerFee } = tweetArgs;
+  const { donorId, recipientId, totalAmount, ftId, referrerId, referrerFee } = tweetArgs;
 
-  const [donorTag, recipientTag, reffererTag] = await Promise.all([
-    nearQuery.lookupTwitterHandle(donorId).then((handle) => handle ?? donorId),
-    nearQuery.lookupTwitterHandle(recipientId).then((handle) => handle ?? recipientId),
-    reffererId
-      ? nearQuery.lookupTwitterHandle(reffererId).then((handle) => handle ?? reffererId)
-      : Promise.resolve(reffererId),
+  const [donorTag, recipientTag, referrerTag] = await Promise.all([
+    getAccountTag(donorId),
+    getAccountTag(recipientId),
+    referrerId && getAccountTag(referrerId),
   ]);
 
   // Format the totalAmount to a more readable form, assuming it's in the smallest unit of the token
@@ -75,13 +72,13 @@ async function formatTweetMessage(tweetArgs: DonateTweetArgs) {
   // Construct the base message
   let message = `🎉 Project Donation Alert! 🎉\n`;
   message += `Donor: ${donorTag}\n`;
-  message += `Recipient: ${recipientTag}\n`;
+  message += `Project: ${recipientTag}\n`;
   message += `Amount: ${formattedTotal} ${ftId.toUpperCase()}\n`;
 
   // Include referrer information if present
-  if (reffererId && referrerFee) {
+  if (referrerTag && referrerFee) {
     const formattedReferrerFee = formatAmount(referrerFee, ftId);
-    message += `Referrer: ${reffererTag}\n`;
+    message += `Referrer: ${referrerTag}\n`;
     message += `Referrer Fee: ${formattedReferrerFee} ${ftId.toUpperCase()}\n`;
   }
 
@@ -89,4 +86,10 @@ async function formatTweetMessage(tweetArgs: DonateTweetArgs) {
   message += `https://bos.potlock.org/?tab=project&projectId=${recipientId}`;
 
   return message;
+}
+
+// utility function to get the twitter handle from near.social
+async function getAccountTag(accountId: string) {
+  const handle = await nearQuery.lookupTwitterHandle(accountId);
+  return handle ?? accountId;
 }

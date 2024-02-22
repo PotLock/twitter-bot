@@ -1,40 +1,30 @@
-import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "./db/db-helpers";
-import { trackDonate } from "./lib/contract-trackers/donate-tracker";
-import { trackRegistry } from "./lib/contract-trackers/registry-tracker";
-import { trackPotfactory } from "./lib/contract-trackers/potfactory-tracker";
-import { sendTweet } from "./twitter";
+import NearQuery from "@/lib/data/client";
+import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "@/lib/db/db-helpers";
+import { trackDonate } from "@/lib/trackers/donate-tracker";
+import { trackPotfactory } from "@/lib/trackers/potfactory-tracker";
+import { trackRegistry } from "@/lib/trackers/registry-tracker";
+import { BOT_ERROR_DELAY, BOT_INTERVAL, TWEET_ERROR_DELAY, TWEET_INTERVAL } from "@/lib/config";
+import { sendTweet } from "@/lib/twitter";
 
-const BOT_INTERVAL = 30 * 1000; // 30 seconds
-const BOT_ERROR_DELAY = 60 * 1000; // 1 minute
-const TWEET_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const TWEET_ERROR_DELAY = 30 * 60 * 1000; // 30 minutes
+export const nearQuery = new NearQuery();
 
-// main event loop to process data and send tweets
-const processBlocks = async () => {
-  const lastProcessedBlockHeight = await getLastProcessedBlockHeight();
+// start the main event loop
+await main();
 
+async function main() {
   try {
+    const lastProcessedBlockHeight = await getLastProcessedBlockHeight();
     const startBlockHeight = lastProcessedBlockHeight + 1;
 
-    const donateResponse = (await trackDonate(startBlockHeight)) ?? {
-      tweetMessages: [],
-      endBlockHeight: 0,
-    };
-    const registryResponse = (await trackRegistry(startBlockHeight)) ?? {
-      tweetMessages: [],
-      endBlockHeight: 0,
-    };
-
-    const potfactoryResponse = (await trackPotfactory(startBlockHeight)) ?? {
-      tweetMessages: [],
-      endBlockHeight: 0,
-    };
+    const donateResponse = await trackDonate(startBlockHeight);
+    const registryResponse = await trackRegistry(startBlockHeight);
+    const potfactoryResponse = await trackPotfactory(startBlockHeight);
 
     const { tweetMessages: donateTweets, endBlockHeight: donateEndBlockHeight } = donateResponse;
     const { tweetMessages: registryTweets, endBlockHeight: registryEndBlockHeight } = registryResponse;
     const { tweetMessages: potfactoryTweets, endBlockHeight: potfactoryEndBlockHeight } = potfactoryResponse;
 
-    // get the max processed block height from all the responses
+    // find the highest block height form the data
     const newProcessedBlockHeight = Math.max(
       donateEndBlockHeight,
       registryEndBlockHeight,
@@ -46,7 +36,6 @@ const processBlocks = async () => {
       `${startBlockHeight} > ${newProcessedBlockHeight} ${donateTweets.length} donate | ${registryTweets.length} registry | ${potfactoryTweets.length} potfactory`
     );
 
-    // send tweets using sendTweet make sure to wait 15 after each tweet and not send them asynchronously
     for (const tweet of [...donateTweets, ...registryTweets, ...potfactoryTweets]) {
       const tweetStatus = await sendTweet(tweet);
 
@@ -60,13 +49,10 @@ const processBlocks = async () => {
     await setLastProcessedBlockHeight(newProcessedBlockHeight);
 
     await new Promise((resolve) => setTimeout(resolve, BOT_INTERVAL));
-    await processBlocks();
+    await main();
   } catch (error) {
     console.error("Error processing receipts, waiting...", error);
     await new Promise((resolve) => setTimeout(resolve, BOT_ERROR_DELAY));
-    await processBlocks();
+    await main();
   }
-};
-
-// Kick off the processing
-await processBlocks();
+}

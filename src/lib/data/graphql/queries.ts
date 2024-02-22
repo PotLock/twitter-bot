@@ -49,3 +49,22 @@ export const potfactoryReceipts = `
     }
   }
 `;
+
+export type QueryName = "potlockReceipts" | "potfactoryReceipts";
+
+export const queryMap: Map<QueryName, { query: string; operationName: string }> = new Map([
+  [
+    "potlockReceipts",
+    {
+      query: potlockReceipts,
+      operationName: "PotlockReceipts",
+    },
+  ],
+  [
+    "potfactoryReceipts",
+    {
+      query: potfactoryReceipts,
+      operationName: "PotfactoryReceipts",
+    },
+  ],
+]);

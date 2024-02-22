@@ -1,12 +1,12 @@
 import { createHmac } from "crypto";
 import OAuth from "oauth-1.0a";
 
-const TWITTER_CONSUMER_KEY = `${process.env.TWITTER_CONSUMER_KEY}`;
-const TWITTER_CONSUMER_SECRET = `${process.env.TWITTER_CONSUMER_SECRET}`;
-const TWITTER_ACCESS_TOKEN = `${process.env.TWITTER_ACCESS_TOKEN}`;
-const TWITTER_TOKEN_SECRET = `${process.env.TWITTER_TOKEN_SECRET}`;
+const TWITTER_CONSUMER_KEY = `${Bun.env.TWITTER_CONSUMER_KEY}`;
+const TWITTER_CONSUMER_SECRET = `${Bun.env.TWITTER_CONSUMER_SECRET}`;
+const TWITTER_ACCESS_TOKEN = `${Bun.env.TWITTER_ACCESS_TOKEN}`;
+const TWITTER_TOKEN_SECRET = `${Bun.env.TWITTER_TOKEN_SECRET}`;
 
-const NODE_ENV = process.env.NODE_ENV;
+const NODE_ENV = Bun.env.NODE_ENV;
 
 const oauth = new OAuth({
   consumer: { key: TWITTER_CONSUMER_KEY, secret: TWITTER_CONSUMER_SECRET },

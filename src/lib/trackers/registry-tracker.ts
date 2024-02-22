@@ -1,6 +1,5 @@
-import { nearQuery } from "../../near-query/client";
-import { TrackerResponse } from "../types";
-import { shortenMessage } from "../utils";
+import { nearQuery } from "@/main";
+import { TrackerResponse, shortenMessage } from "@/lib/trackers/utils";
 
 type RegistryTweetArgs = {
   projectId: string;

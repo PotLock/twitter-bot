@@ -1,6 +1,14 @@
-import { nearQuery } from "../../near-query/client";
-import { TrackerResponse } from "../types";
-import { formatAmount, shortenMessage } from "../utils";
+import { nearQuery } from "@/main";
+import { TrackerResponse, formatAmount, shortenMessage } from "@/lib/trackers/utils";
+
+type PotfactoryTweetArgs = {
+  method_name: string;
+  sender: string;
+  receiver: string;
+  block_height: number;
+  deposit: string;
+  parsedArgs: any;
+};
 
 export async function trackPotfactory(startBlockHeight: number): Promise<TrackerResponse> {
   const { errors, data: potfactoryReceipts } = await nearQuery.fetchContractReceipts({
@@ -38,20 +46,11 @@ export async function trackPotfactory(startBlockHeight: number): Promise<Tracker
   };
 }
 
-type PotFactoryReceipt = {
-  method_name: string;
-  sender: string;
-  receiver: string;
-  block_height: number;
-  deposit: string;
-  parsedArgs: any;
-};
-
-async function formatTweetMessage(receipt: PotFactoryReceipt): Promise<string> {
+async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string> {
   const { method_name, sender, receiver, block_height, deposit, parsedArgs } = receipt;
   const parsedMessage = parsedArgs.message;
-
   const parsedProjectId = parsedArgs.project_id;
+
   const projectTag = (await nearQuery.lookupTwitterHandle(parsedProjectId)) || parsedProjectId;
 
   const formattedDeposit = formatAmount(deposit, "near");

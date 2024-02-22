@@ -4,6 +4,9 @@
     "module": "ES2022",
     "moduleResolution": "node",
     "types": ["bun-types"],
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

@@ -1,20 +1,7 @@
-import { GraphQLResponse, fetchGraphQL } from "./config";
-import { potfactoryReceipts, potlockReceipts } from "./queries";
+import { GraphQLResponse, fetchGraphQL } from "@/lib/data/graphql/fetch";
+import { QueryName, queryMap } from "@/lib/data/graphql/queries";
 
-type QueryName = "potlockReceipts" | "potfactoryReceipts";
-
-const querieData: Record<QueryName, Record<string, string>> = {
-  potlockReceipts: {
-    query: potlockReceipts,
-    operationName: "PotlockReceipts",
-  },
-  potfactoryReceipts: {
-    query: potfactoryReceipts,
-    operationName: "PotfactoryReceipts",
-  },
-};
-
-class NearQuery {
+export default class NearQuery {
   async fetchContractReceipts({
     queryName,
     receiver,
@@ -26,9 +13,13 @@ class NearQuery {
     methodName?: string;
     startBlockHeight: number;
   }): Promise<GraphQLResponse> {
+    const { query, operationName } = queryMap.get(queryName) || {};
+    if (!query || !operationName) {
+      return { errors: [{ message: `Query not found for queryName: ${queryName}` }] };
+    }
     const { errors, data } = await fetchGraphQL({
-      query: querieData[queryName].query,
-      operationName: querieData[queryName].operationName,
+      query,
+      operationName,
       variables: { receiver, methodName, startBlockHeight },
     });
 
@@ -44,7 +35,7 @@ class NearQuery {
     }
   }
 
-  // Fetch the Twitter handle from the near.social contract
+  // Fetch twitter handle from near.social
   async lookupTwitterHandle(accountId: string): Promise<string | null> {
     const response = await fetch("https://api.near.social/get", {
       method: "POST",
@@ -60,7 +51,6 @@ class NearQuery {
     const twitterHandleRaw = data[accountId]?.profile?.linktree?.twitter;
 
     if (twitterHandleRaw) {
-      // Remove unwanted patterns and characters
       const sanitizedHandle = sanitizeTwitterHandle(twitterHandleRaw);
       return `@${sanitizedHandle}`;
     } else {
@@ -68,8 +58,6 @@ class NearQuery {
     }
   }
 }
-
-export const nearQuery = new NearQuery();
 
 // Helper function to parse the receipt data
 function parseReceiptData(receiptData: any) {
@@ -86,6 +74,7 @@ function parseReceiptData(receiptData: any) {
   }
 }
 
+// Helper function to sanitize invalid twitter handles
 function sanitizeTwitterHandle(unsanitizedHandle: string): string {
   return unsanitizedHandle
     .replace(/^(https?:\/\/)?(www\.)?twitter\.com\//, "") // Remove URL prefixes
