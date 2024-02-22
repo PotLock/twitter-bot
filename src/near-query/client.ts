@@ -61,11 +61,7 @@ class NearQuery {
 
     if (twitterHandleRaw) {
       // Remove unwanted patterns and characters
-      const sanitizedHandle = twitterHandleRaw
-        .replace(/^(https?:\/\/)?(www\.)?twitter\.com\//, "") // Remove URL prefixes
-        .replace(/[^a-zA-Z0-9_]/g, "") // Remove invalid characters
-        .substring(0, 15); // Enforce max length of 15 characters
-
+      const sanitizedHandle = sanitizeTwitterHandle(twitterHandleRaw);
       return `@${sanitizedHandle}`;
     } else {
       return null;
@@ -88,4 +84,11 @@ function parseReceiptData(receiptData: any) {
   } catch (error: any) {
     throw new Error(`Failed to parse args for data ${receiptData}: ${error.message}`);
   }
+}
+
+function sanitizeTwitterHandle(unsanitizedHandle: string): string {
+  return unsanitizedHandle
+    .replace(/^(https?:\/\/)?(www\.)?twitter\.com\//, "") // Remove URL prefixes
+    .replace(/[^a-zA-Z0-9_]/g, "") // Remove invalid characters
+    .substring(0, 15); // Enforce max length of 15 characters
 }

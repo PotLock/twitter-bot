@@ -1,18 +1,14 @@
 import { nearQuery } from "../../near-query/client";
+import { TrackerResponse } from "../types";
 import { shortenMessage } from "../utils";
 
-type TweetArgs = {
+type RegistryTweetArgs = {
   projectId: string;
   status: string;
   reviewNotes?: string;
 };
 
-type TrackStatusChangesResponse = {
-  endBlockHeight: number;
-  tweetMessages: string[];
-};
-
-export async function trackStatusChanges(startBlockHeight: number): Promise<TrackStatusChangesResponse | undefined> {
+export async function trackRegistry(startBlockHeight: number): Promise<TrackerResponse> {
   const { errors, data: potlockReceipts } = await nearQuery.fetchContractReceipts({
     queryName: "potlockReceipts",
     startBlockHeight: startBlockHeight,
@@ -21,20 +17,26 @@ export async function trackStatusChanges(startBlockHeight: number): Promise<Trac
   });
 
   if (errors) {
-    console.log("Error fetching potlock receipts", errors);
-    return;
+    console.log("Error fetching registry receipts", errors);
+    return {
+      endBlockHeight: 0,
+      tweetMessages: [],
+    };
   }
 
   if (!potlockReceipts.length) {
     // console.log("No new status update receipts found");
-    return;
+    return {
+      endBlockHeight: 0,
+      tweetMessages: [],
+    };
   }
 
-  const endBlockHeight = potlockReceipts[potlockReceipts.length - 1]?.block_height;
+  const endBlockHeight = potlockReceipts.at(-1).block_height;
 
   const tweetMessages = await Promise.all(
     potlockReceipts.map(async (receipt: any) => {
-      const tweetArgs: TweetArgs = {
+      const tweetArgs: RegistryTweetArgs = {
         projectId: receipt.parsedArgs.project_id,
         status: receipt.parsedArgs.status,
         reviewNotes: receipt.parsedArgs.review_notes,
@@ -50,7 +52,7 @@ export async function trackStatusChanges(startBlockHeight: number): Promise<Trac
   };
 }
 
-async function formatTweetMessage(tweetArgs: TweetArgs) {
+async function formatTweetMessage(tweetArgs: RegistryTweetArgs) {
   const { projectId, status, reviewNotes } = tweetArgs;
 
   const projectTag = await nearQuery.lookupTwitterHandle(projectId).then((handle) => handle ?? projectId);

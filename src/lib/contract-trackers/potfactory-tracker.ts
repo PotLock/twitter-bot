@@ -1,12 +1,8 @@
 import { nearQuery } from "../../near-query/client";
+import { TrackerResponse } from "../types";
 import { formatAmount, shortenMessage } from "../utils";
 
-type TrackStatusChangesResponse = {
-  endBlockHeight: number;
-  tweetMessages: string[];
-};
-
-export async function trackPotfactory(startBlockHeight: number): Promise<TrackStatusChangesResponse | undefined> {
+export async function trackPotfactory(startBlockHeight: number): Promise<TrackerResponse> {
   const { errors, data: potfactoryReceipts } = await nearQuery.fetchContractReceipts({
     queryName: "potfactoryReceipts",
     startBlockHeight: startBlockHeight,
@@ -14,15 +10,20 @@ export async function trackPotfactory(startBlockHeight: number): Promise<TrackSt
 
   if (errors) {
     console.log("Error fetching potfactory receipts", errors);
-    return;
+    return {
+      endBlockHeight: 0,
+      tweetMessages: [],
+    };
   }
 
   if (!potfactoryReceipts.length) {
-    // console.log("No new status update receipts found");
-    return;
+    return {
+      endBlockHeight: 0,
+      tweetMessages: [],
+    };
   }
 
-  const endBlockHeight = potfactoryReceipts[potfactoryReceipts.length - 1]?.block_height;
+  const endBlockHeight = potfactoryReceipts.at(-1).block_height;
 
   const tweetMessages = await Promise.all(
     potfactoryReceipts.map(async (receipt: any) => {

@@ -1,7 +1,8 @@
 import { nearQuery } from "../../near-query/client";
+import { TrackerResponse } from "../types";
 import { formatAmount } from "../utils";
 
-type TweetArgs = {
+type DonateTweetArgs = {
   donorId: string;
   recipientId: string;
   totalAmount: string;
@@ -10,13 +11,8 @@ type TweetArgs = {
   referrerFee?: string;
 };
 
-type TrackDonationsResponse = {
-  endBlockHeight: number;
-  tweetMessages: string[];
-};
-
-export async function trackDonations(startBlockHeight: number): Promise<TrackDonationsResponse | undefined> {
-  const { errors, data: potlockReceipts } = await nearQuery.fetchContractReceipts({
+export async function trackDonate(startBlockHeight: number): Promise<TrackerResponse> {
+  const { errors, data: donateReceipts } = await nearQuery.fetchContractReceipts({
     queryName: "potlockReceipts",
     startBlockHeight,
     receiver: "donate.potlock.near",
@@ -24,21 +20,26 @@ export async function trackDonations(startBlockHeight: number): Promise<TrackDon
   });
 
   if (errors) {
-    console.log("Error fetching potlock receipts", errors);
-    return;
+    console.log("Error fetching donate receipts", errors);
+    return {
+      endBlockHeight: 0,
+      tweetMessages: [],
+    };
   }
 
-  if (!potlockReceipts.length) {
-    // console.log("No new donate receipts found");
-    return;
+  if (!donateReceipts.length) {
+    return {
+      endBlockHeight: 0,
+      tweetMessages: [],
+    };
   }
 
-  const endBlockHeight = potlockReceipts[potlockReceipts.length - 1].block_height;
+  const endBlockHeight = donateReceipts.at(-1).block_height;
 
   // return an array of tweet messages
   const tweetMessages = await Promise.all(
-    potlockReceipts.map(async (receipt: any) => {
-      const tweetArgs: TweetArgs = {
+    donateReceipts.map(async (receipt: any) => {
+      const donateTweetArgs: DonateTweetArgs = {
         recipientId: receipt.parsedEvent.recipient_id,
         donorId: receipt.parsedEvent.donor_id,
         totalAmount: receipt.parsedEvent.total_amount,
@@ -47,18 +48,17 @@ export async function trackDonations(startBlockHeight: number): Promise<TrackDon
         referrerFee: receipt.parsedEvent.referrer_fee,
       };
 
-      return await formatTweetMessage(tweetArgs);
+      return await formatTweetMessage(donateTweetArgs);
     })
   );
 
-  // return the array of tweet messages
   return {
     endBlockHeight,
     tweetMessages,
   };
 }
 
-async function formatTweetMessage(tweetArgs: TweetArgs) {
+async function formatTweetMessage(tweetArgs: DonateTweetArgs) {
   const { donorId, recipientId, totalAmount, ftId, reffererId, referrerFee } = tweetArgs;
 
   const [donorTag, recipientTag, reffererTag] = await Promise.all([
