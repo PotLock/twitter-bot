@@ -1,3 +1,5 @@
+import { START_BLOCK_HEIGHT } from "@/config";
+
 const db = await getOrCreateDB();
 const data = await db.json();
 
@@ -25,7 +27,7 @@ async function getOrCreateDB() {
     await Bun.write(
       Bun.file(filePath),
       JSON.stringify({
-        lastProcessedBlockHeight: 0,
+        lastProcessedBlockHeight: START_BLOCK_HEIGHT,
       })
     );
   }

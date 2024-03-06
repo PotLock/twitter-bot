@@ -2,7 +2,7 @@
 
 Copy .env.example to .env.local and fill in the values.
 
-Edit `src/config.ts` to change tweet frequecies and minimum donation amount.
+Edit `src/config.ts` to change tweet frequecies, minimum donation amount, start blockheight
 
 # How to run
 
