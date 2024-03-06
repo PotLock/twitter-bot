@@ -1,3 +1,9 @@
+# Configuration
+
+Copy .env.example to .env.local and fill in the values.
+
+Edit `src/config.ts` to change tweet frequecies and minimum donation amount.
+
 # How to run
 
 ```bash

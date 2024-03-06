@@ -1,5 +1,6 @@
 import { nearQuery } from "@/main";
 import { TrackerResponse, formatAmount, shortenMessage } from "@/lib/trackers/utils";
+import { DONATION_BROADCAST_MINIMUM } from "@/config";
 
 type PotfactoryTweetArgs = {
   method_name: string;
@@ -40,13 +41,15 @@ export async function trackPotfactory(startBlockHeight: number): Promise<Tracker
     })
   );
 
+  const filteredMessages = tweetMessages.filter((message) => message !== null);
+
   return {
     endBlockHeight,
-    tweetMessages,
+    tweetMessages: filteredMessages,
   };
 }
 
-async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string> {
+async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string | null> {
   const { method_name, sender, receiver, block_height, deposit, parsedArgs } = receipt;
   const parsedMessage = parsedArgs.message;
   const parsedProjectId = parsedArgs.project_id;
@@ -54,6 +57,10 @@ async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string>
   const projectTag = (await nearQuery.lookupTwitterHandle(parsedProjectId)) || parsedProjectId;
 
   const formattedDeposit = formatAmount(deposit, "near");
+
+  if (Number(formattedDeposit) < DONATION_BROADCAST_MINIMUM) {
+    return null;
+  }
 
   let message = "";
 
@@ -79,7 +86,7 @@ async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string>
 
       message += `${statusEmoji} Project ${projectTag} ${status?.toLowerCase()} for ${receiver}\n`;
       if (parsedArgs.notes) {
-        message += `Notes: "${parsedArgs.notes}"\n`;
+        message += `Review Notes: "${parsedArgs.notes}"\n`;
       }
       break;
 

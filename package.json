@@ -7,7 +7,8 @@
     "start": "NODE_ENV=production bun out/main.js"
   },
   "dependencies": {
-    "oauth-1.0a": "^2.2.6"
+    "oauth-1.0a": "^2.2.6",
+    "openai": "^4.28.4"
   },
   "devDependencies": {
     "bun-types": "latest"

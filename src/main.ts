@@ -1,4 +1,4 @@
-import NearQuery from "@/api/client";
+import NearQuery from "@/api/near/client";
 import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "@/db/db-helpers";
 import { trackDonate } from "@/lib/trackers/donate-tracker";
 import { trackPotfactory } from "@/lib/trackers/potfactory-tracker";

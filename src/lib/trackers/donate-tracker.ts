@@ -1,5 +1,6 @@
 import { nearQuery } from "@/main";
 import { TrackerResponse, formatAmount } from "@/lib/trackers/utils";
+import { DONATION_BROADCAST_MINIMUM } from "@/config";
 
 type DonateTweetArgs = {
   donorId: string;
@@ -51,9 +52,12 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
     })
   );
 
+  // remove any null messages
+  const filteredMessages = tweetMessages.filter((message) => message !== null);
+
   return {
     endBlockHeight,
-    tweetMessages,
+    tweetMessages: filteredMessages,
   };
 }
 
@@ -68,6 +72,10 @@ async function formatTweetMessage(tweetArgs: DonateTweetArgs) {
 
   // Format the totalAmount to a more readable form, assuming it's in the smallest unit of the token
   const formattedTotal = formatAmount(totalAmount, ftId);
+
+  if (Number(formattedTotal) < DONATION_BROADCAST_MINIMUM) {
+    return null;
+  }
 
   // Construct the base message
   let message = `🎉 Project Donation Alert! 🎉\n`;

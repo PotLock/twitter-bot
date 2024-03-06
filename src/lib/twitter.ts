@@ -1,3 +1,4 @@
+import { moderateTweet } from "@/api/openai/client";
 import { createHmac } from "crypto";
 import OAuth from "oauth-1.0a";
 
@@ -17,6 +18,13 @@ const oauth = new OAuth({
 type TweetStatus = "rate-limited" | "success" | "duplicate" | "error" | "simulated" | "unknown";
 
 export async function sendTweet(tweetMessage: string): Promise<TweetStatus> {
+  // moderate tweet using openai
+  const moderatedTweetMessage = await moderateTweet(tweetMessage);
+
+  if (moderatedTweetMessage?.includes("OMITTED")) {
+    console.log(`Flagged tweet:\n${tweetMessage}\nModerated tweet:\n${moderatedTweetMessage}`);
+  }
+
   const request_data = {
     url: "https://api.twitter.com/2/tweets",
     method: "POST",
@@ -26,7 +34,7 @@ export async function sendTweet(tweetMessage: string): Promise<TweetStatus> {
     try {
       const response = await fetch(request_data.url, {
         method: request_data.method,
-        body: JSON.stringify({ text: tweetMessage }),
+        body: JSON.stringify({ text: moderatedTweetMessage }),
         headers: {
           "Content-Type": "application/json",
           ...oauth.toHeader(oauth.authorize(request_data, { key: TWITTER_ACCESS_TOKEN, secret: TWITTER_TOKEN_SECRET })),
@@ -50,7 +58,7 @@ export async function sendTweet(tweetMessage: string): Promise<TweetStatus> {
       return "error";
     }
   } else {
-    console.log("Simulating Tweet:\n", tweetMessage);
+    console.log("Simulating Tweet:\n", moderatedTweetMessage);
     return "simulated";
   }
 }
