@@ -57,7 +57,7 @@ async function formatTweetMessage(tweetArgs: RegistryTweetArgs) {
   const projectTag = await nearQuery.lookupTwitterHandle(projectId).then((handle) => handle ?? projectId);
 
   // Start with the base message
-  let message = `Project ${projectTag}`;
+  let message = `@potlock_ Project ${projectTag}`;
 
   // Append status-specific prefix
   switch (status) {

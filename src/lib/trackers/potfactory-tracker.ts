@@ -69,7 +69,7 @@ async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string 
       const donorTag = (await nearQuery.lookupTwitterHandle(sender)) || sender;
       const recipientTag = (await nearQuery.lookupTwitterHandle(receiver)) || receiver;
 
-      message += `🫕 Pot Donation Alert! 🎉\n`;
+      message += `🫕 @potlock_ Pot Donation Alert! 🎉\n`;
       message += `Donor: ${donorTag}\n`;
       message += `Project: ${projectTag}\n`;
       message += `Amount: ${formattedDeposit} NEAR\n`;

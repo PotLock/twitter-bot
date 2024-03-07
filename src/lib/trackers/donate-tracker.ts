@@ -78,7 +78,7 @@ async function formatTweetMessage(tweetArgs: DonateTweetArgs) {
   }
 
   // Construct the base message
-  let message = `🎉 Project Donation Alert! 🎉\n`;
+  let message = `🎉 @potlock_ Project Donation Alert! 🎉\n`;
   message += `Donor: ${donorTag}\n`;
   message += `Project: ${recipientTag}\n`;
   message += `Amount: ${formattedTotal} ${ftId.toUpperCase()}\n`;
