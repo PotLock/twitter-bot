@@ -14,7 +14,7 @@ await main();
 
 async function main() {
   try {
-    const lastProcessedBlockHeight = await getLastProcessedBlockHeight();
+    const lastProcessedBlockHeight = Bun.env.NODE_ENV === "production" ? await getLastProcessedBlockHeight() : 0;
     if (lastProcessedBlockHeight === null) {
       console.error("No lastProcessedBlockHeight found, waiting...");
       await Bun.sleep(BOT_ERROR_DELAY);
@@ -26,9 +26,21 @@ async function main() {
     const registryResponse = await trackRegistry(startBlockHeight);
     const potfactoryResponse = await trackPotfactory(startBlockHeight);
 
-    const { tweetMessages: donateTweets, endBlockHeight: donateEndBlockHeight } = donateResponse;
-    const { tweetMessages: registryTweets, endBlockHeight: registryEndBlockHeight } = registryResponse;
-    const { tweetMessages: potfactoryTweets, endBlockHeight: potfactoryEndBlockHeight } = potfactoryResponse;
+    const {
+      twitterMessages: donateTwitterMessages,
+      telegramMessages: donateTelegramMessages,
+      endBlockHeight: donateEndBlockHeight,
+    } = donateResponse;
+    const {
+      twitterMessages: registryTwitterMessages,
+      telegramMessages: registryTelegramMessages,
+      endBlockHeight: registryEndBlockHeight,
+    } = registryResponse;
+    const {
+      twitterMessages: potfactoryTwitterMessages,
+      telegramMessages: potfactoryTelegramMessages,
+      endBlockHeight: potfactoryEndBlockHeight,
+    } = potfactoryResponse;
 
     // find the highest block height form the data
     const newProcessedBlockHeight = Math.max(
@@ -39,13 +51,21 @@ async function main() {
     );
 
     console.log(
-      `${startBlockHeight} - ${newProcessedBlockHeight} donate: ${donateTweets.length} | registry: ${registryTweets.length} | potfactory: ${potfactoryTweets.length}`
+      `${startBlockHeight} - ${newProcessedBlockHeight} donate: ${donateTwitterMessages.length} | registry: ${registryTwitterMessages.length} | potfactory: ${potfactoryTwitterMessages.length}`
     );
 
-    for (const tweet of [...donateTweets, ...registryTweets, ...potfactoryTweets]) {
-      const chatIds = await sendTelegramMessage(tweet);
-      console.log(`Sent to ${chatIds.length} telegram chats`);
-      const tweetStatus = await sendTweet(tweet);
+    // SEND TELEGRAM MESSAGES
+    for (const telegramMessage of [
+      ...donateTelegramMessages,
+      ...registryTelegramMessages,
+      ...potfactoryTelegramMessages,
+    ]) {
+      await sendTelegramMessage(telegramMessage);
+    }
+
+    // SEND TWITTER MESSAGES
+    for (const twitterMessage of [...donateTwitterMessages, ...registryTwitterMessages, ...potfactoryTwitterMessages]) {
+      const tweetStatus = await sendTweet(twitterMessage);
       if (tweetStatus === "rate-limited" || tweetStatus === "error" || tweetStatus === "unknown") {
         await Bun.sleep(TWEET_ERROR_DELAY);
       } else {

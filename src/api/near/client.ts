@@ -36,7 +36,10 @@ export default class NearQuery {
   }
 
   // Fetch twitter handle from near.social
-  async lookupTwitterHandle(accountId: string): Promise<string | null> {
+  async lookupHandles(accountId: string): Promise<{
+    twitter: string | null;
+    telegram: string | null;
+  }> {
     const response = await fetch("https://api.near.social/get", {
       method: "POST",
       headers: {
@@ -49,16 +52,14 @@ export default class NearQuery {
 
     const data = await response.json();
     const twitterHandleRaw = data[accountId]?.profile?.linktree?.twitter;
+    const telegramHandleRaw = data[accountId]?.profile?.linktree?.telegram;
 
-    if (twitterHandleRaw) {
-      const sanitizedHandle = sanitizeTwitterHandle(twitterHandleRaw);
-      return `@${sanitizedHandle}`;
-    } else {
-      return null;
-    }
+    return {
+      twitter: twitterHandleRaw ? sanitizeHandle(twitterHandleRaw) : null,
+      telegram: telegramHandleRaw ? sanitizeHandle(telegramHandleRaw) : null,
+    };
   }
 }
-
 // Helper function to parse the receipt data
 function parseReceiptData(receiptData: any) {
   try {
@@ -74,10 +75,10 @@ function parseReceiptData(receiptData: any) {
   }
 }
 
-// Helper function to sanitize invalid twitter handles
-function sanitizeTwitterHandle(unsanitizedHandle: string): string {
-  return unsanitizedHandle
-    .replace(/^(https?:\/\/)?(www\.)?twitter\.com\//, "") // Remove URL prefixes
-    .replace(/[^a-zA-Z0-9_]/g, "") // Remove invalid characters
+// Helper function to sanitize invalid twitter handles add @ prefix
+function sanitizeHandle(unsanitizedHandle: string): string {
+  const sanitizedHandle = unsanitizedHandle
+    .replace(/^(https?:\/\/)?(www\.)?(twitter\.com\/|t\.me\/)|[^a-zA-Z0-9_]/g, "") // Remove URL prefixes
     .substring(0, 15); // Enforce max length of 15 characters
+  return `@${sanitizedHandle}`;
 }

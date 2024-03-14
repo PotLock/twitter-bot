@@ -1,8 +1,3 @@
-export type TrackerResponse = {
-  endBlockHeight: number;
-  tweetMessages: string[];
-};
-
 const FT_DECIMALS_MAP: { [key: string]: number } = {
   near: 24,
   usd: 6,

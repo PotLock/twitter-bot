@@ -1,8 +1,9 @@
 import { nearQuery } from "@/main";
-import { TrackerResponse, formatAmount, shortenMessage } from "@/lib/trackers/utils";
 import { DONATION_BROADCAST_MINIMUM } from "@/config";
+import { formatAmount, shortenMessage } from "@/lib/trackers/utils";
+import { Platform, TrackerResponse } from "@/lib/trackers/types";
 
-type PotfactoryTweetArgs = {
+type PotfactoryMessageArgs = {
   method_name: string;
   sender: string;
   receiver: string;
@@ -21,40 +22,57 @@ export async function trackPotfactory(startBlockHeight: number): Promise<Tracker
     console.log("Error fetching potfactory receipts", errors);
     return {
       endBlockHeight: 0,
-      tweetMessages: [],
+      twitterMessages: [],
+      telegramMessages: [],
     };
   }
 
   if (!potfactoryReceipts.length) {
     return {
       endBlockHeight: 0,
-      tweetMessages: [],
+      twitterMessages: [],
+      telegramMessages: [],
     };
   }
 
   const endBlockHeight = potfactoryReceipts.at(-1).block_height;
 
-  const tweetMessages = await Promise.all(
-    potfactoryReceipts.map(async (receipt: any) => {
-      const tweetMessage = await formatTweetMessage(receipt);
-      return tweetMessage;
+  const twitterMessages = await Promise.all(
+    potfactoryReceipts.map((receipt: any) => {
+      return formatMessage(receipt, "twitter");
+    })
+  );
+  const telegramMessages = await Promise.all(
+    potfactoryReceipts.map((receipt: any) => {
+      return formatMessage(receipt, "telegram");
     })
   );
 
-  const filteredMessages = tweetMessages.filter((message) => message !== null);
+  // remove any null messages
+  const filteredTwitterMessages = twitterMessages.filter((message: string | null) => message !== null);
+  const filteredTelegramMessages = telegramMessages.filter((message: string | null) => message !== null);
 
   return {
     endBlockHeight,
-    tweetMessages: filteredMessages,
+    twitterMessages: filteredTwitterMessages,
+    telegramMessages: filteredTelegramMessages,
   };
 }
 
-async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string | null> {
+async function formatMessage(receipt: PotfactoryMessageArgs, platform: Platform): Promise<string | null> {
   const { method_name, sender, receiver, block_height, deposit, parsedArgs } = receipt;
   const parsedMessage = parsedArgs.message;
   const parsedProjectId = parsedArgs.project_id;
+  const parsedChef = parsedArgs.chef;
 
-  const projectTag = (await nearQuery.lookupTwitterHandle(parsedProjectId)) || parsedProjectId;
+  const [projectTag, donorTag, recipientTag, chefTag] = await Promise.all([
+    nearQuery.lookupHandles(parsedProjectId).then((handles) => handles[platform] || parsedProjectId),
+    method_name === "donate" && nearQuery.lookupHandles(sender).then((handles) => handles[platform] || sender),
+    method_name === "donate" && nearQuery.lookupHandles(receiver).then((handles) => handles[platform] || receiver),
+    method_name === "new" &&
+      parsedChef &&
+      nearQuery.lookupHandles(parsedArgs.chef).then((handles) => handles[platform] || parsedChef),
+  ]);
 
   const formattedDeposit = formatAmount(deposit, "near");
 
@@ -66,10 +84,7 @@ async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string 
 
   switch (method_name) {
     case "donate":
-      const donorTag = (await nearQuery.lookupTwitterHandle(sender)) || sender;
-      const recipientTag = (await nearQuery.lookupTwitterHandle(receiver)) || receiver;
-
-      message += `🫕 @potlock_ Pot Donation Alert! 🎉\n`;
+      message += platform === "twitter" ? `🫕 @potlock_ Pot Donation Alert! 🎉\n` : `🫕 Pot Donation Alert! 🎉\n`;
       message += `Donor: ${donorTag}\n`;
       message += `Project: ${projectTag}\n`;
       message += `Amount: ${formattedDeposit} NEAR\n`;
@@ -101,7 +116,6 @@ async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string 
 
     case "new":
       const potName = parsedArgs.pot_name || "";
-      const parsedChef = parsedArgs.chef;
       const maxProjects = parsedArgs.max_projects || "No limit";
       message += `🫕 New Pot Created: ${potName} 🎊\n`;
       const parsedDescription = parsedArgs.pot_description;
@@ -109,8 +123,7 @@ async function formatTweetMessage(receipt: PotfactoryTweetArgs): Promise<string 
         const description = shortenMessage(parsedDescription, 150);
         message += `Description: "${description}"\n`;
       }
-      if (parsedChef) {
-        const chefTag = (await nearQuery.lookupTwitterHandle(parsedChef)) || parsedChef;
+      if (chefTag) {
         message += `Chef: ${chefTag}\n`;
       }
       message += `Project Limit: ${maxProjects}\n`;

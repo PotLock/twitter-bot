@@ -1,8 +1,9 @@
 import { nearQuery } from "@/main";
-import { TrackerResponse, formatAmount } from "@/lib/trackers/utils";
 import { DONATION_BROADCAST_MINIMUM } from "@/config";
+import { formatAmount } from "@/lib/trackers/utils";
+import { Platform, TrackerResponse } from "@/lib/trackers/types";
 
-type DonateTweetArgs = {
+type DonateMessageArgs = {
   donorId: string;
   recipientId: string;
   totalAmount: string;
@@ -23,23 +24,25 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
     console.log("Error fetching donate receipts", errors);
     return {
       endBlockHeight: 0,
-      tweetMessages: [],
+      twitterMessages: [],
+      telegramMessages: [],
     };
   }
 
   if (!donateReceipts.length) {
     return {
       endBlockHeight: 0,
-      tweetMessages: [],
+      twitterMessages: [],
+      telegramMessages: [],
     };
   }
 
   const endBlockHeight = donateReceipts.at(-1).block_height;
 
   // return an array of tweet messages
-  const tweetMessages = await Promise.all(
-    donateReceipts.map(async (receipt: any) => {
-      const donateTweetArgs: DonateTweetArgs = {
+  const twitterMessages = await Promise.all(
+    donateReceipts.map((receipt: any) => {
+      const donateMessageArgs: DonateMessageArgs = {
         recipientId: receipt.parsedEvent.recipient_id,
         donorId: receipt.parsedEvent.donor_id,
         totalAmount: receipt.parsedEvent.total_amount,
@@ -48,26 +51,43 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
         referrerFee: receipt.parsedEvent.referrer_fee,
       };
 
-      return await formatTweetMessage(donateTweetArgs);
+      return formatMessage(donateMessageArgs, "twitter");
+    })
+  );
+
+  const telegramMessages = await Promise.all(
+    donateReceipts.map((receipt: any) => {
+      const donateMessageArgs: DonateMessageArgs = {
+        recipientId: receipt.parsedEvent.recipient_id,
+        donorId: receipt.parsedEvent.donor_id,
+        totalAmount: receipt.parsedEvent.total_amount,
+        ftId: receipt.parsedEvent.ft_id,
+        referrerId: receipt.parsedEvent.referer_id,
+        referrerFee: receipt.parsedEvent.referrer_fee,
+      };
+
+      return formatMessage(donateMessageArgs, "telegram");
     })
   );
 
   // remove any null messages
-  const filteredMessages = tweetMessages.filter((message) => message !== null);
+  const filteredTwitterMessages = twitterMessages.filter((message: string | null) => message !== null);
+  const filteredTelegramMessages = telegramMessages.filter((message: string | null) => message !== null);
 
   return {
     endBlockHeight,
-    tweetMessages: filteredMessages,
+    twitterMessages: filteredTwitterMessages,
+    telegramMessages: filteredTelegramMessages,
   };
 }
 
-async function formatTweetMessage(tweetArgs: DonateTweetArgs) {
-  const { donorId, recipientId, totalAmount, ftId, referrerId, referrerFee } = tweetArgs;
+async function formatMessage(messageArgs: DonateMessageArgs, platform: Platform) {
+  const { donorId, recipientId, totalAmount, ftId, referrerId, referrerFee } = messageArgs;
 
   const [donorTag, recipientTag, referrerTag] = await Promise.all([
-    getAccountTag(donorId),
-    getAccountTag(recipientId),
-    referrerId && getAccountTag(referrerId),
+    nearQuery.lookupHandles(donorId).then((handles) => handles[platform] || donorId),
+    nearQuery.lookupHandles(recipientId).then((handles) => handles[platform] || recipientId),
+    referrerId && nearQuery.lookupHandles(referrerId).then((handles) => handles[platform] || referrerId),
   ]);
 
   // Format the totalAmount to a more readable form, assuming it's in the smallest unit of the token
@@ -78,7 +98,8 @@ async function formatTweetMessage(tweetArgs: DonateTweetArgs) {
   }
 
   // Construct the base message
-  let message = `🎉 @potlock_ Project Donation Alert! 🎉\n`;
+  let message =
+    platform === "twitter" ? `🎉 @potlock_ Project Donation Alert! 🎉\n` : `🎉 Project Donation Alert! 🎉\n`;
   message += `Donor: ${donorTag}\n`;
   message += `Project: ${recipientTag}\n`;
   message += `Amount: ${formattedTotal} ${ftId.toUpperCase()}\n`;
@@ -94,10 +115,4 @@ async function formatTweetMessage(tweetArgs: DonateTweetArgs) {
   message += `https://bos.potlock.org/?tab=project&projectId=${recipientId}`;
 
   return message;
-}
-
-// utility function to get the twitter handle from near.social
-async function getAccountTag(accountId: string) {
-  const handle = await nearQuery.lookupTwitterHandle(accountId);
-  return handle ?? accountId;
 }

@@ -1,7 +1,8 @@
 import { nearQuery } from "@/main";
-import { TrackerResponse, shortenMessage } from "@/lib/trackers/utils";
+import { shortenMessage } from "@/lib/trackers/utils";
+import { Platform, TrackerResponse } from "@/lib/trackers/types";
 
-type RegistryTweetArgs = {
+type RegistryMessageArgs = {
   projectId: string;
   status: string;
   reviewNotes?: string;
@@ -19,7 +20,8 @@ export async function trackRegistry(startBlockHeight: number): Promise<TrackerRe
     console.log("Error fetching registry receipts", errors);
     return {
       endBlockHeight: 0,
-      tweetMessages: [],
+      twitterMessages: [],
+      telegramMessages: [],
     };
   }
 
@@ -27,37 +29,48 @@ export async function trackRegistry(startBlockHeight: number): Promise<TrackerRe
     // console.log("No new status update receipts found");
     return {
       endBlockHeight: 0,
-      tweetMessages: [],
+      twitterMessages: [],
+      telegramMessages: [],
     };
   }
 
   const endBlockHeight = potlockReceipts.at(-1).block_height;
 
-  const tweetMessages = await Promise.all(
-    potlockReceipts.map(async (receipt: any) => {
-      const tweetArgs: RegistryTweetArgs = {
-        projectId: receipt.parsedArgs.project_id,
-        status: receipt.parsedArgs.status,
-        reviewNotes: receipt.parsedArgs.review_notes,
-      };
+  const getMessageArgs = (receipt: any) => ({
+    projectId: receipt.parsedArgs.project_id,
+    status: receipt.parsedArgs.status,
+    reviewNotes: receipt.parsedArgs.review_notes,
+  });
 
-      return await formatTweetMessage(tweetArgs);
+  const twitterMessages = await Promise.all(
+    potlockReceipts.map((receipt: any) => {
+      return formatMessage(getMessageArgs(receipt), "twitter");
+    })
+  );
+  const telegramMessages = await Promise.all(
+    potlockReceipts.map((receipt: any) => {
+      return formatMessage(getMessageArgs(receipt), "telegram");
     })
   );
 
+  // remove any null messages
+  const filteredTwitterMessages = twitterMessages.filter((message: string | null) => message !== null);
+  const filteredTelegramMessages = telegramMessages.filter((message: string | null) => message !== null);
+
   return {
     endBlockHeight,
-    tweetMessages,
+    twitterMessages: filteredTwitterMessages,
+    telegramMessages: filteredTelegramMessages,
   };
 }
 
-async function formatTweetMessage(tweetArgs: RegistryTweetArgs) {
-  const { projectId, status, reviewNotes } = tweetArgs;
+async function formatMessage(messageArgs: RegistryMessageArgs, platform: Platform): Promise<string | null> {
+  const { projectId, status, reviewNotes } = messageArgs;
 
-  const projectTag = await nearQuery.lookupTwitterHandle(projectId).then((handle) => handle ?? projectId);
+  const projectTag = await nearQuery.lookupHandles(projectId).then((handles) => handles[platform] || projectId);
 
   // Start with the base message
-  let message = `@potlock_ Project ${projectTag}`;
+  let message = platform === "twitter" ? `@potlock_ Project ${projectTag}` : `Project ${projectTag}`;
 
   // Append status-specific prefix
   switch (status) {

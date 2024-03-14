@@ -25,11 +25,7 @@ export async function sendTelegramMessage(telegramMessage: string) {
 
   // Function to send a message to a single chat ID
   const sendMessage = async (chatId: string) => {
-    if (isProduction) {
-      await bot.sendMessage(chatId, telegramMessage);
-    } else {
-      console.log(`Simulating Telegram message to chatId ${chatId}`);
-    }
+    await bot.sendMessage(chatId, telegramMessage);
   };
 
   // Function to process a batch of chat IDs
@@ -43,7 +39,11 @@ export async function sendTelegramMessage(telegramMessage: string) {
   // Process the chat IDs in batches of 29
   for (let i = 0; i < chatIds.length; i += 29) {
     const batch = chatIds.slice(i, i + 29);
-    await processBatch(batch);
+    if (isProduction) {
+      await processBatch(batch);
+    } else {
+      console.log(`Simulating Telegram message: ${telegramMessage} for ${batch.length} chat IDs`);
+    }
 
     // Wait for 31 seconds before processing the next batch, if there are more chat IDs to process
     if (i + 29 < chatIds.length) {
