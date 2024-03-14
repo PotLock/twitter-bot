@@ -1,11 +1,11 @@
 import NearQuery from "@/api/near/client";
-import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "@/db/db-helpers";
 import { trackDonate } from "@/lib/trackers/donate-tracker";
 import { trackPotfactory } from "@/lib/trackers/potfactory-tracker";
 import { trackRegistry } from "@/lib/trackers/registry-tracker";
 import { sendTweet } from "@/lib/twitter";
 import { BOT_INTERVAL, BOT_ERROR_DELAY, TWEET_INTERVAL, TWEET_ERROR_DELAY } from "@/config";
 import { bot, sendTelegramMessage } from "./lib/telegram";
+import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "./kv/actions";
 
 export const nearQuery = new NearQuery();
 
@@ -16,6 +16,11 @@ async function main() {
   bot.startPolling();
   try {
     const lastProcessedBlockHeight = await getLastProcessedBlockHeight();
+    if (lastProcessedBlockHeight === null) {
+      console.error("No lastProcessedBlockHeight found, waiting...");
+      await Bun.sleep(BOT_ERROR_DELAY);
+      return;
+    }
     const startBlockHeight = lastProcessedBlockHeight + 1;
 
     const donateResponse = await trackDonate(startBlockHeight);
