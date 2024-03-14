@@ -5,7 +5,7 @@ const token = `${process.env.TELEGRAM_BOT_TOKEN}`;
 
 const isProduction = Bun.env.NODE_ENV === "production";
 
-export const bot = new TelegramBot(token, { polling: false });
+export const bot = new TelegramBot(token, { polling: true });
 
 // on start of the bot, get the chat id and store it in the kv store
 bot.onText(/\/start/, async (msg) => {
@@ -28,7 +28,7 @@ export async function sendTelegramMessage(telegramMessage: string) {
     if (isProduction) {
       await bot.sendMessage(chatId, telegramMessage);
     } else {
-      console.log(`Simulating Telegram message to chatIds ${chatId}`);
+      console.log(`Simulating Telegram message to chatId ${chatId}`);
     }
   };
 
