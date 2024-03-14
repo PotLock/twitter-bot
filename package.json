@@ -7,10 +7,13 @@
     "start": "NODE_ENV=production bun out/main.js"
   },
   "dependencies": {
+    "@vercel/kv": "^1.0.1",
+    "node-telegram-bot-api": "^0.65.1",
     "oauth-1.0a": "^2.2.6",
     "openai": "^4.28.4"
   },
   "devDependencies": {
+    "@types/node-telegram-bot-api": "^0.64.3",
     "bun-types": "latest"
   },
   "module": "src/index.js"

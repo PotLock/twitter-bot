@@ -5,6 +5,7 @@ import { trackPotfactory } from "@/lib/trackers/potfactory-tracker";
 import { trackRegistry } from "@/lib/trackers/registry-tracker";
 import { sendTweet } from "@/lib/twitter";
 import { BOT_INTERVAL, BOT_ERROR_DELAY, TWEET_INTERVAL, TWEET_ERROR_DELAY } from "@/config";
+import { bot, sendTelegramMessage } from "./lib/telegram";
 
 export const nearQuery = new NearQuery();
 
@@ -12,6 +13,7 @@ export const nearQuery = new NearQuery();
 await main();
 
 async function main() {
+  bot.startPolling();
   try {
     const lastProcessedBlockHeight = await getLastProcessedBlockHeight();
     const startBlockHeight = lastProcessedBlockHeight + 1;
@@ -37,6 +39,7 @@ async function main() {
     );
 
     for (const tweet of [...donateTweets, ...registryTweets, ...potfactoryTweets]) {
+      await sendTelegramMessage(tweet);
       const tweetStatus = await sendTweet(tweet);
       if (tweetStatus === "rate-limited" || tweetStatus === "error" || tweetStatus === "unknown") {
         await Bun.sleep(TWEET_ERROR_DELAY);
