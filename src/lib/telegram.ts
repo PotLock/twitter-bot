@@ -5,7 +5,7 @@ const token = `${process.env.TELEGRAM_BOT_TOKEN}`;
 
 const isProduction = Bun.env.NODE_ENV === "production";
 
-export const bot = new TelegramBot(token, { polling: true });
+export const bot = new TelegramBot(token, { polling: isProduction ? true : false });
 
 // on start of the bot, get the chat id and store it in the kv store
 bot.onText(/\/start/, async (msg) => {
@@ -21,11 +21,13 @@ bot.onText(/\/stop/, async (msg) => {
 });
 
 export async function sendTelegramMessage(telegramMessage: string) {
-  const chatIds = await getTelegramChatIds();
+  const chatIds = isProduction ? await getTelegramChatIds() : ["1504733653"];
 
   // Function to send a message to a single chat ID
   const sendMessage = async (chatId: string) => {
-    await bot.sendMessage(chatId, telegramMessage);
+    await bot.sendMessage(chatId, telegramMessage, {
+      parse_mode: "HTML",
+    });
   };
 
   // Function to process a batch of chat IDs
@@ -39,11 +41,7 @@ export async function sendTelegramMessage(telegramMessage: string) {
   // Process the chat IDs in batches of 29
   for (let i = 0; i < chatIds.length; i += 29) {
     const batch = chatIds.slice(i, i + 29);
-    if (isProduction) {
-      await processBatch(batch);
-    } else {
-      console.log(`Simulating Telegram message: ${telegramMessage} for ${batch.length} chat IDs`);
-    }
+    await processBatch(batch);
 
     // Wait for 31 seconds before processing the next batch, if there are more chat IDs to process
     if (i + 29 < chatIds.length) {

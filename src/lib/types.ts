@@ -5,3 +5,10 @@ export type TrackerResponse = {
 };
 
 export type Platform = "twitter" | "telegram";
+
+export type LinkTree = {
+  twitter: string | null;
+  telegram: string | null;
+  website: string | null;
+  github: string | null;
+};

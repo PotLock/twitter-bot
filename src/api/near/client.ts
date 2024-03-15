@@ -1,5 +1,7 @@
 import { GraphQLResponse, fetchGraphQL } from "@/api/graphql/fetch";
 import { QueryName, queryMap } from "@/api/graphql/queries";
+import { LinkTree } from "@/lib/types";
+import { sanitizeHandle } from "@/lib/utils";
 
 export default class NearQuery {
   async fetchContractReceipts({
@@ -36,9 +38,11 @@ export default class NearQuery {
   }
 
   // Fetch twitter handle from near.social
-  async lookupHandles(accountId: string): Promise<{
+  async getLinkTree(accountId: string): Promise<{
     twitter: string | null;
     telegram: string | null;
+    website: string | null;
+    github: string | null;
   }> {
     const response = await fetch("https://api.near.social/get", {
       method: "POST",
@@ -51,12 +55,14 @@ export default class NearQuery {
     });
 
     const data = await response.json();
-    const twitterHandleRaw = data[accountId]?.profile?.linktree?.twitter;
-    const telegramHandleRaw = data[accountId]?.profile?.linktree?.telegram;
+    const linktree = data?.[accountId]?.profile?.linktree as LinkTree;
+    const { twitter: twitterHandleRaw, telegram: telegramHandleRaw, website, github } = linktree || {};
 
     return {
       twitter: twitterHandleRaw ? sanitizeHandle(twitterHandleRaw) : null,
       telegram: telegramHandleRaw ? sanitizeHandle(telegramHandleRaw) : null,
+      website,
+      github,
     };
   }
 }
@@ -73,12 +79,4 @@ function parseReceiptData(receiptData: any) {
   } catch (error: any) {
     throw new Error(`Failed to parse args for data ${receiptData}: ${error.message}`);
   }
-}
-
-// Helper function to sanitize invalid twitter handles add @ prefix
-function sanitizeHandle(unsanitizedHandle: string): string {
-  const sanitizedHandle = unsanitizedHandle
-    .replace(/^(https?:\/\/)?(www\.)?(twitter\.com\/|t\.me\/)|[^a-zA-Z0-9_]/g, "") // Remove URL prefixes
-    .substring(0, 15); // Enforce max length of 15 characters
-  return `@${sanitizedHandle}`;
 }

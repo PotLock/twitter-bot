@@ -1,7 +1,7 @@
 import { nearQuery } from "@/main";
 import { DONATION_BROADCAST_MINIMUM } from "@/config";
-import { formatAmount } from "@/lib/trackers/utils";
-import { Platform, TrackerResponse } from "@/lib/trackers/types";
+import { formatAmount } from "@/lib/utils";
+import { Platform, TrackerResponse } from "@/lib/types";
 
 type DonateMessageArgs = {
   donorId: string;
@@ -84,10 +84,13 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
 async function formatMessage(messageArgs: DonateMessageArgs, platform: Platform) {
   const { donorId, recipientId, totalAmount, ftId, referrerId, referrerFee } = messageArgs;
 
-  const [donorTag, recipientTag, referrerTag] = await Promise.all([
-    nearQuery.lookupHandles(donorId).then((handles) => handles[platform] || donorId),
-    nearQuery.lookupHandles(recipientId).then((handles) => handles[platform] || recipientId),
-    referrerId && nearQuery.lookupHandles(referrerId).then((handles) => handles[platform] || referrerId),
+  const projectIdTag = recipientId.split(".")[0];
+
+  const [donorTag, projectSocialTag, projectWebsite, referrerTag] = await Promise.all([
+    nearQuery.getLinkTree(donorId).then((linkTree) => linkTree[platform] || donorId),
+    nearQuery.getLinkTree(recipientId).then((linkTree) => linkTree[platform] || recipientId),
+    nearQuery.getLinkTree(recipientId).then((linkTree) => linkTree.website || null),
+    referrerId && nearQuery.getLinkTree(referrerId).then((linkTree) => linkTree[platform] || referrerId),
   ]);
 
   // Format the totalAmount to a more readable form, assuming it's in the smallest unit of the token
@@ -101,7 +104,12 @@ async function formatMessage(messageArgs: DonateMessageArgs, platform: Platform)
   let message =
     platform === "twitter" ? `🎉 @potlock_ Project Donation Alert! 🎉\n` : `🎉 Project Donation Alert! 🎉\n`;
   message += `Donor: ${donorTag}\n`;
-  message += `Project: ${recipientTag}\n`;
+  message +=
+    platform === "twitter"
+      ? `Project: ${projectSocialTag}\n`
+      : projectWebsite
+      ? `Project: <a href="${projectWebsite}">${projectIdTag}</a>\n`
+      : `Project: ${projectIdTag}\n`;
   message += `Amount: ${formattedTotal} ${ftId.toUpperCase()}\n`;
 
   // Include referrer information if present
@@ -112,7 +120,10 @@ async function formatMessage(messageArgs: DonateMessageArgs, platform: Platform)
   }
 
   // add project link
-  message += `https://bos.potlock.org/?tab=project&projectId=${recipientId}`;
+  message +=
+    platform === "twitter"
+      ? `https://bos.potlock.org/?tab=project&projectId=${recipientId}`
+      : `<a href="https://bos.potlock.org/?tab=project&projectId=${recipientId}">View on Potlock</a>`;
 
   return message;
 }

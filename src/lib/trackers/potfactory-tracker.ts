@@ -1,7 +1,7 @@
 import { nearQuery } from "@/main";
 import { DONATION_BROADCAST_MINIMUM } from "@/config";
-import { formatAmount, shortenMessage } from "@/lib/trackers/utils";
-import { Platform, TrackerResponse } from "@/lib/trackers/types";
+import { formatAmount, shortenMessage } from "@/lib/utils";
+import { Platform, TrackerResponse } from "@/lib/types";
 
 type PotfactoryMessageArgs = {
   method_name: string;
@@ -64,14 +64,13 @@ async function formatMessage(receipt: PotfactoryMessageArgs, platform: Platform)
   const parsedMessage = parsedArgs.message;
   const parsedProjectId = parsedArgs.project_id;
   const parsedChef = parsedArgs.chef;
-
-  const [projectTag, donorTag, recipientTag, chefTag] = await Promise.all([
-    nearQuery.lookupHandles(parsedProjectId).then((handles) => handles[platform] || parsedProjectId),
-    method_name === "donate" && nearQuery.lookupHandles(sender).then((handles) => handles[platform] || sender),
-    method_name === "donate" && nearQuery.lookupHandles(receiver).then((handles) => handles[platform] || receiver),
-    method_name === "new" &&
-      parsedChef &&
-      nearQuery.lookupHandles(parsedArgs.chef).then((handles) => handles[platform] || parsedChef),
+  const potTag = receiver.split(".")[0];
+  const projectIdTag = parsedProjectId?.split(".")[0];
+  const [projectSocialTag, projectWebsite, donorTag, chefTag] = await Promise.all([
+    nearQuery.getLinkTree(parsedProjectId).then((linkTree) => linkTree[platform] || projectIdTag || parsedProjectId),
+    nearQuery.getLinkTree(parsedProjectId).then((linkTree) => linkTree.website || null),
+    nearQuery.getLinkTree(sender).then((linkTree) => linkTree[platform] || sender),
+    parsedChef && nearQuery.getLinkTree(parsedArgs.chef).then((linkTree) => linkTree[platform] || parsedChef),
   ]);
 
   const formattedDeposit = formatAmount(deposit, "near");
@@ -86,9 +85,17 @@ async function formatMessage(receipt: PotfactoryMessageArgs, platform: Platform)
     case "donate":
       message += platform === "twitter" ? `🫕 @potlock_ Pot Donation Alert! 🎉\n` : `🫕 Pot Donation Alert! 🎉\n`;
       message += `Donor: ${donorTag}\n`;
-      message += `Project: ${projectTag}\n`;
+      message +=
+        platform === "twitter"
+          ? `Project: ${projectSocialTag}\n`
+          : projectWebsite
+          ? `Project: <a href="${projectWebsite}">${projectIdTag}</a>\n`
+          : `Project: <a href="https://bos.potlock.org/?tab=project&projectId=${parsedProjectId}">${projectIdTag}</a>\n`;
       message += `Amount: ${formattedDeposit} NEAR\n`;
-      message += `Pot: ${recipientTag}\n`;
+      message +=
+        platform === "twitter"
+          ? `Pot: ${potTag}\n`
+          : `Pot: <a href="https://bos.potlock.org/?tab=pot&potId=${receiver}&nav=projects">${potTag}</a>\n`;
       if (parsedMessage) {
         const donationMessage = shortenMessage(parsedMessage, 150);
         message += `Message: "${donationMessage}"\n`;
@@ -99,7 +106,7 @@ async function formatMessage(receipt: PotfactoryMessageArgs, platform: Platform)
       const status = parsedArgs.status;
       const statusEmoji = status === "Approved" ? "✅" : status === "Rejected" ? "❌" : "🔔";
 
-      message += `${statusEmoji} Project ${projectTag} ${status?.toLowerCase()} for ${receiver}\n`;
+      message += `${statusEmoji} Project ${projectSocialTag} ${status?.toLowerCase()} for ${receiver}\n`;
       if (parsedArgs.notes) {
         message += `Review Notes: "${parsedArgs.notes}"\n`;
       }
@@ -134,7 +141,7 @@ async function formatMessage(receipt: PotfactoryMessageArgs, platform: Platform)
       break;
   }
 
-  message += `https://bos.potlock.org/?tab=pot&potId=${receiver}`;
+  message += platform === "twitter" ? `https://bos.potlock.org/?tab=pot&potId=${receiver}&nav=projects` : "";
 
   return message;
 }

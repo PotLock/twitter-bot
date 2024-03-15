@@ -14,7 +14,8 @@ await main();
 
 async function main() {
   try {
-    const lastProcessedBlockHeight = Bun.env.NODE_ENV === "production" ? await getLastProcessedBlockHeight() : 0;
+    const lastProcessedBlockHeight =
+      Bun.env.NODE_ENV === "production" ? await getLastProcessedBlockHeight() : 114509477;
     if (lastProcessedBlockHeight === null) {
       console.error("No lastProcessedBlockHeight found, waiting...");
       await Bun.sleep(BOT_ERROR_DELAY);

@@ -1,6 +1,6 @@
 import { nearQuery } from "@/main";
-import { shortenMessage } from "@/lib/trackers/utils";
-import { Platform, TrackerResponse } from "@/lib/trackers/types";
+import { shortenMessage } from "@/lib/utils";
+import { Platform, TrackerResponse } from "@/lib/types";
 
 type RegistryMessageArgs = {
   projectId: string;
@@ -67,35 +67,46 @@ export async function trackRegistry(startBlockHeight: number): Promise<TrackerRe
 async function formatMessage(messageArgs: RegistryMessageArgs, platform: Platform): Promise<string | null> {
   const { projectId, status, reviewNotes } = messageArgs;
 
-  const projectTag = await nearQuery.lookupHandles(projectId).then((handles) => handles[platform] || projectId);
+  const projectIdTag = projectId.split(".")[0];
+  const projectTag =
+    platform === "twitter"
+      ? await nearQuery.getLinkTree(projectId).then((linkTree) => linkTree[platform] || projectIdTag)
+      : projectIdTag;
+  const projectWebsite = await nearQuery.getLinkTree(projectId).then((linkTree) => linkTree.website || null);
 
-  // Start with the base message
-  let message = platform === "twitter" ? `@potlock_ Project ${projectTag}` : `Project ${projectTag}`;
+  let message = ``;
 
-  // Append status-specific prefix
   switch (status) {
     case "Rejected":
-      message = `❌ ${message} has been rejected ❌`;
+      message = `❌ Project rejected ❌\n`;
       break;
     case "Graylisted":
-      message = `🟡 ${message} has been graylisted 🟡`;
+      message = `🟡 Project Graylisted 🟡\n`;
       break;
     case "Approved":
-      message = `✅ ${message} has been approved ✅`;
+      message = `✅ Project approved ✅\n`;
       break;
     default:
-      message = `${message} status changed to ${status}`;
+      message = `Project status changed to ${status}\n`;
       break;
   }
 
-  // Append review notes if present
+  message +=
+    platform === "twitter"
+      ? `Project ${projectTag}\n`
+      : projectWebsite
+      ? `Project: <a href="${projectWebsite}">${projectIdTag}</a>\n`
+      : `Project: ${projectIdTag}\n`;
+
   if (reviewNotes) {
     const shortendedMessage = shortenMessage(reviewNotes, 150);
-    message += `\nReview notes: "${shortendedMessage}"`;
+    message += `Review notes: "${shortendedMessage}"\n`;
   }
 
-  // Append project link
-  message += `\nhttps://bos.potlock.org/?tab=project&projectId=${projectId}`;
+  message +=
+    platform === "twitter"
+      ? `https://bos.potlock.org/?tab=project&projectId=${projectId}\n`
+      : `<a href="https://bos.potlock.org/?tab=project&projectId=${projectId}">View on Potlock</a>\n`;
 
   return message;
 }
