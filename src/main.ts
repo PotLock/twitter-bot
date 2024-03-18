@@ -9,13 +9,15 @@ import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "./kv/a
 
 export const nearQuery = new NearQuery();
 
+const isProduction = Bun.env.NODE_ENV === "production";
+let devBlockHeight = 114972477;
+
 // start the main event loop
 await main();
 
 async function main() {
   try {
-    const lastProcessedBlockHeight =
-      Bun.env.NODE_ENV === "production" ? await getLastProcessedBlockHeight() : 114509477;
+    const lastProcessedBlockHeight = isProduction ? await getLastProcessedBlockHeight() : devBlockHeight;
     if (lastProcessedBlockHeight === null) {
       console.error("No lastProcessedBlockHeight found, waiting...");
       await Bun.sleep(BOT_ERROR_DELAY);
@@ -55,6 +57,10 @@ async function main() {
       `${startBlockHeight} - ${newProcessedBlockHeight} donate: ${donateTwitterMessages.length} | registry: ${registryTwitterMessages.length} | potfactory: ${potfactoryTwitterMessages.length}`
     );
 
+    console.log(
+      `${startBlockHeight} - ${newProcessedBlockHeight} donate: ${donateTelegramMessages.length} | registry: ${registryTelegramMessages.length} | potfactory: ${potfactoryTelegramMessages.length}`
+    );
+
     // SEND TELEGRAM MESSAGES
     for (const telegramMessage of [
       ...donateTelegramMessages,
@@ -73,8 +79,15 @@ async function main() {
         await Bun.sleep(TWEET_INTERVAL);
       }
     }
+    if (isProduction) {
+      await setLastProcessedBlockHeight(newProcessedBlockHeight);
+    } else {
+      console.log("DevBlockHeightOLD", devBlockHeight);
 
-    await setLastProcessedBlockHeight(newProcessedBlockHeight);
+      devBlockHeight = newProcessedBlockHeight;
+      console.log("DevBlockHeight", devBlockHeight);
+    }
+
     await Bun.sleep(BOT_INTERVAL);
     await main();
   } catch (error) {

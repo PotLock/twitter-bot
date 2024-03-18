@@ -22,6 +22,7 @@ bot.onText(/\/stop/, async (msg) => {
 
 export async function sendTelegramMessage(telegramMessage: string) {
   const chatIds = isProduction ? await getTelegramChatIds() : ["1504733653"];
+  console.log("Sending/Simulating Telegram Message:", telegramMessage);
 
   // Function to send a message to a single chat ID
   const sendMessage = async (chatId: string) => {
