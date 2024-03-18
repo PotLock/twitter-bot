@@ -67,7 +67,9 @@ async function formatMessage(receipt: PotfactoryMessageArgs, platform: Platform)
   const potTag = receiver.split(".")[0];
   const projectIdTag = parsedProjectId?.split(".")[0];
   const [projectSocialTag, projectWebsite, donorTag, chefTag] = await Promise.all([
-    nearQuery.getLinkTree(parsedProjectId).then((linkTree) => linkTree[platform] || projectIdTag || parsedProjectId),
+    nearQuery
+      .getLinkTree(parsedProjectId)
+      .then((linkTree) => linkTree[platform] || projectIdTag || parsedProjectId || "Sponsorship"),
     nearQuery.getLinkTree(parsedProjectId).then((linkTree) => linkTree.website || null),
     nearQuery.getLinkTree(sender).then((linkTree) => linkTree[platform] || sender),
     parsedChef && nearQuery.getLinkTree(parsedArgs.chef).then((linkTree) => linkTree[platform] || parsedChef),
@@ -90,6 +92,8 @@ async function formatMessage(receipt: PotfactoryMessageArgs, platform: Platform)
           ? `Project: ${projectSocialTag}\n`
           : projectWebsite
           ? `Project: <a href="${projectWebsite}">${projectIdTag}</a>\n`
+          : projectSocialTag === "Sponsorship"
+          ? `Project: ${projectSocialTag}\n`
           : `Project: <a href="https://bos.potlock.org/?tab=project&projectId=${parsedProjectId}">${projectIdTag}</a>\n`;
       message += `Amount: ${formattedDeposit} NEAR\n`;
       message +=
