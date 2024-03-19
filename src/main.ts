@@ -10,7 +10,7 @@ import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "./kv/a
 export const nearQuery = new NearQuery();
 
 const isProduction = Bun.env.NODE_ENV === "production";
-let devBlockHeight = 115020776;
+let devBlockHeight = 115030776;
 
 // start the main event loop
 await main();
@@ -67,21 +67,17 @@ async function main() {
     const allTelegramMessages = [...donateTelegramMessages, ...registryTelegramMessages, ...potfactoryTelegramMessages];
 
     for (let i = 0; i < allTwitterMessages.length; i++) {
-      const tweetStatus = await sendTweet(allTwitterMessages[i]);
-      const telegramResponse = await sendTelegramMessage(allTelegramMessages[i]);
-      if (tweetStatus === "rate-limited" || tweetStatus === "error" || tweetStatus === "unknown") {
-        await Bun.sleep(TWEET_ERROR_DELAY);
-      } else {
-        await Bun.sleep(TWEET_INTERVAL);
+      try {
+        const tweetStatus = await sendTweet(allTwitterMessages[i]);
+        const telegramResponse = await sendTelegramMessage(allTelegramMessages[i]);
+      } catch (error) {
+        console.error("Error sending tweet or telegram message, continuing", error);
       }
     }
     if (isProduction) {
       await setLastProcessedBlockHeight(newProcessedBlockHeight);
     } else {
-      console.log("DevBlockHeightOLD", devBlockHeight);
-
       devBlockHeight = newProcessedBlockHeight;
-      console.log("DevBlockHeight", devBlockHeight);
     }
 
     await Bun.sleep(BOT_INTERVAL);
