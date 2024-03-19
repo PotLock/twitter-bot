@@ -64,8 +64,8 @@ async function formatMessage(receipt: PotfactoryMessageArgs, platform: Platform)
   const parsedMessage = parsedArgs.message;
   const parsedProjectId = parsedArgs.project_id;
   const parsedChef = parsedArgs.chef;
-  const potTag = receiver && receiver.split(".")[0];
-  const projectIdTag = parsedProjectId && parsedProjectId?.split(".")[0];
+  const potTag = receiver.split(".")[0];
+  const projectIdTag = parsedProjectId?.split(".")[0];
   const [projectSocialTag, projectWebsite, donorTag, chefTag] = await Promise.all([
     nearQuery
       .getLinkTree(parsedProjectId)

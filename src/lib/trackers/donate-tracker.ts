@@ -84,7 +84,7 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
 async function formatMessage(messageArgs: DonateMessageArgs, platform: Platform) {
   const { donorId, recipientId, totalAmount, ftId, referrerId, referrerFee } = messageArgs;
 
-  const projectIdTag = recipientId && recipientId.split(".")[0];
+  const projectIdTag = recipientId.split(".")[0];
 
   const [donorTag, projectSocialTag, projectWebsite, referrerTag] = await Promise.all([
     nearQuery.getLinkTree(donorId).then((linkTree) => linkTree[platform] || donorId),
@@ -110,13 +110,13 @@ async function formatMessage(messageArgs: DonateMessageArgs, platform: Platform)
       : projectWebsite
       ? `Project: <a href="${projectWebsite}">${projectIdTag}</a>\n`
       : `Project: ${projectIdTag}\n`;
-  message += `Amount: ${formattedTotal} ${ftId?.toUpperCase()}\n`;
+  message += `Amount: ${formattedTotal} ${ftId.toUpperCase()}\n`;
 
   // Include referrer information if present
   if (referrerTag && referrerFee) {
     const formattedReferrerFee = formatAmount(referrerFee, ftId);
     message += `Referrer: ${referrerTag}\n`;
-    message += `Referrer Fee: ${formattedReferrerFee} ${ftId?.toUpperCase()}\n`;
+    message += `Referrer Fee: ${formattedReferrerFee} ${ftId.toUpperCase()}\n`;
   }
 
   // add project link
