@@ -26,9 +26,13 @@ export async function sendTelegramMessage(telegramMessage: string) {
 
   // Function to send a message to a single chat ID
   const sendMessage = async (chatId: string) => {
-    await bot.sendMessage(chatId, telegramMessage, {
-      parse_mode: "HTML",
-    });
+    try {
+      await bot.sendMessage(chatId, telegramMessage, {
+        parse_mode: "HTML",
+      });
+    } catch (e) {
+      console.error(`Error sending Telegram message to chat: ${chatId}`, e);
+    }
   };
 
   // Function to process a batch of chat IDs
