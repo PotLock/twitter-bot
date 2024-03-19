@@ -10,7 +10,7 @@ import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "./kv/a
 export const nearQuery = new NearQuery();
 
 const isProduction = Bun.env.NODE_ENV === "production";
-let devBlockHeight = 114972477;
+let devBlockHeight = 115020776;
 
 // start the main event loop
 await main();
@@ -61,18 +61,14 @@ async function main() {
       `${startBlockHeight} - ${newProcessedBlockHeight} donate: ${donateTelegramMessages.length} | registry: ${registryTelegramMessages.length} | potfactory: ${potfactoryTelegramMessages.length}`
     );
 
-    // SEND TELEGRAM MESSAGES
-    for (const telegramMessage of [
-      ...donateTelegramMessages,
-      ...registryTelegramMessages,
-      ...potfactoryTelegramMessages,
-    ]) {
-      await sendTelegramMessage(telegramMessage);
-    }
+    // combine all twitter messages
+    const allTwitterMessages = [...donateTwitterMessages, ...registryTwitterMessages, ...potfactoryTwitterMessages];
+    // combine all telegram messages
+    const allTelegramMessages = [...donateTelegramMessages, ...registryTelegramMessages, ...potfactoryTelegramMessages];
 
-    // SEND TWITTER MESSAGES
-    for (const twitterMessage of [...donateTwitterMessages, ...registryTwitterMessages, ...potfactoryTwitterMessages]) {
-      const tweetStatus = await sendTweet(twitterMessage);
+    for (let i = 0; i < allTwitterMessages.length; i++) {
+      const tweetStatus = await sendTweet(allTwitterMessages[i]);
+      const telegramResponse = await sendTelegramMessage(allTelegramMessages[i]);
       if (tweetStatus === "rate-limited" || tweetStatus === "error" || tweetStatus === "unknown") {
         await Bun.sleep(TWEET_ERROR_DELAY);
       } else {

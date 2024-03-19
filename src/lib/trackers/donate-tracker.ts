@@ -38,19 +38,18 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
   }
 
   const endBlockHeight = donateReceipts.at(-1).block_height;
-
   // return an array of tweet messages
   const twitterMessages = await Promise.all(
     donateReceipts.map((receipt: any) => {
+      if (!receipt.recipientId) return null;
       const donateMessageArgs: DonateMessageArgs = {
-        recipientId: receipt.parsedEvent.recipient_id,
-        donorId: receipt.parsedEvent.donor_id,
-        totalAmount: receipt.parsedEvent.total_amount,
-        ftId: receipt.parsedEvent.ft_id,
+        recipientId: receipt.parsedEvent.recipient_id || receipt.parsedArgs.recipient_id,
+        donorId: receipt.parsedEvent.donor_id || receipt.sender,
+        totalAmount: receipt.parsedEvent.total_amount || receipt.deposit,
+        ftId: receipt.parsedEvent.ft_id || "near",
         referrerId: receipt.parsedEvent.referer_id,
         referrerFee: receipt.parsedEvent.referrer_fee,
       };
-
       return formatMessage(donateMessageArgs, "twitter");
     })
   );
@@ -58,14 +57,13 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
   const telegramMessages = await Promise.all(
     donateReceipts.map((receipt: any) => {
       const donateMessageArgs: DonateMessageArgs = {
-        recipientId: receipt.parsedEvent.recipient_id,
-        donorId: receipt.parsedEvent.donor_id,
-        totalAmount: receipt.parsedEvent.total_amount,
-        ftId: receipt.parsedEvent.ft_id,
+        recipientId: receipt.parsedEvent.recipient_id || receipt.parsedArgs.recipient_id,
+        donorId: receipt.parsedEvent.donor_id || receipt.sender,
+        totalAmount: receipt.parsedEvent.total_amount || receipt.deposit,
+        ftId: receipt.parsedEvent.ft_id || "near",
         referrerId: receipt.parsedEvent.referer_id,
         referrerFee: receipt.parsedEvent.referrer_fee,
       };
-
       return formatMessage(donateMessageArgs, "telegram");
     })
   );
@@ -83,7 +81,6 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
 
 async function formatMessage(messageArgs: DonateMessageArgs, platform: Platform) {
   const { donorId, recipientId, totalAmount, ftId, referrerId, referrerFee } = messageArgs;
-
   const projectIdTag = recipientId.split(".")[0];
 
   const [donorTag, projectSocialTag, projectWebsite, referrerTag] = await Promise.all([
