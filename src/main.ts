@@ -72,16 +72,15 @@ async function main() {
 
       // Send Twitter message
       const tweetStatus = await sendTweet(twitterMessage);
+      // Send Telegram message with the same index
+      await sendTelegramMessage(telegramMessage);
       if (tweetStatus === "rate-limited" || tweetStatus === "error" || tweetStatus === "unknown") {
         await Bun.sleep(TWEET_ERROR_DELAY);
       } else {
         await Bun.sleep(TWEET_INTERVAL);
       }
-
-      // Send Telegram message with the same index
-      await sendTelegramMessage(telegramMessage);
     }
-    
+
     if (isProduction) {
       await setLastProcessedBlockHeight(newProcessedBlockHeight);
     } else {
