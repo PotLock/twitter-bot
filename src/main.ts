@@ -61,24 +61,27 @@ async function main() {
       `${startBlockHeight} - ${newProcessedBlockHeight} donate: ${donateTelegramMessages.length} | registry: ${registryTelegramMessages.length} | potfactory: ${potfactoryTelegramMessages.length}`
     );
 
-    // SEND TELEGRAM MESSAGES
-    for (const telegramMessage of [
-      ...donateTelegramMessages,
-      ...registryTelegramMessages,
-      ...potfactoryTelegramMessages,
-    ]) {
-      await sendTelegramMessage(telegramMessage);
-    }
+    // Combine all messages into single arrays
+    const allTwitterMessages = [...donateTwitterMessages, ...registryTwitterMessages, ...potfactoryTwitterMessages];
+    const allTelegramMessages = [...donateTelegramMessages, ...registryTelegramMessages, ...potfactoryTelegramMessages];
 
-    // SEND TWITTER MESSAGES
-    for (const twitterMessage of [...donateTwitterMessages, ...registryTwitterMessages, ...potfactoryTwitterMessages]) {
+    // Iterate over the messages and send them
+    for (let i = 0; i < allTwitterMessages.length; i++) {
+      const twitterMessage = allTwitterMessages[i];
+      const telegramMessage = allTelegramMessages[i];
+
+      // Send Twitter message
       const tweetStatus = await sendTweet(twitterMessage);
       if (tweetStatus === "rate-limited" || tweetStatus === "error" || tweetStatus === "unknown") {
         await Bun.sleep(TWEET_ERROR_DELAY);
       } else {
         await Bun.sleep(TWEET_INTERVAL);
       }
+
+      // Send Telegram message with the same index
+      await sendTelegramMessage(telegramMessage);
     }
+    
     if (isProduction) {
       await setLastProcessedBlockHeight(newProcessedBlockHeight);
     } else {

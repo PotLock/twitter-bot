@@ -23,7 +23,7 @@ export function sanitizeHandle(unsanitizedHandle: string): string | null {
   const isSocialUrl = socialDomains.some((domain) => unsanitizedHandle.includes(domain));
 
   if ((!isSocialUrl && unsanitizedHandle.includes(".")) || unsanitizedHandle.includes("://")) return null; // Return null if the handle is not a social media URL
-  if (isSocialUrl) unsanitizedHandle = unsanitizedHandle.split("/").pop() || "";
+  if (isSocialUrl) unsanitizedHandle = unsanitizedHandle && unsanitizedHandle.split("/").pop() || "";
 
   // instead of removing invalid characters, we should just check if the handle is valid
   if (!/^[a-zA-Z0-9_]+$/.test(unsanitizedHandle)) return null; // Return null if the handle contains invalid characters

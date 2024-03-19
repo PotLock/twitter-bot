@@ -67,7 +67,7 @@ export async function trackRegistry(startBlockHeight: number): Promise<TrackerRe
 async function formatMessage(messageArgs: RegistryMessageArgs, platform: Platform): Promise<string | null> {
   const { projectId, status, reviewNotes } = messageArgs;
 
-  const projectIdTag = projectId.split(".")[0];
+  const projectIdTag = projectId && projectId.split(".")[0];
   const projectTag =
     platform === "twitter"
       ? await nearQuery.getLinkTree(projectId).then((linkTree) => linkTree[platform] || projectIdTag)
