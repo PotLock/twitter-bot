@@ -70,6 +70,11 @@ async function main() {
       try {
         const tweetStatus = await sendTweet(allTwitterMessages[i]);
         const telegramResponse = await sendTelegramMessage(allTelegramMessages[i]);
+        if (tweetStatus === "rate-limited") {
+          console.log("Twitter Rate limited, waiting...", TWEET_ERROR_DELAY);
+          await Bun.sleep(TWEET_ERROR_DELAY);
+        }
+        await Bun.sleep(TWEET_INTERVAL);
       } catch (error) {
         console.error("Error sending tweet or telegram message, continuing", error);
       }
