@@ -10,7 +10,7 @@ import { getLastProcessedBlockHeight, setLastProcessedBlockHeight } from "./kv/a
 export const nearQuery = new NearQuery();
 
 const isProduction = Bun.env.NODE_ENV === "production";
-let devBlockHeight = 115030776;
+let devBlockHeight = 116900993;
 
 // start the main event loop
 await main();
@@ -55,10 +55,6 @@ async function main() {
 
     console.log(
       `${startBlockHeight} - ${newProcessedBlockHeight} donate: ${donateTwitterMessages.length} | registry: ${registryTwitterMessages.length} | potfactory: ${potfactoryTwitterMessages.length}`
-    );
-
-    console.log(
-      `${startBlockHeight} - ${newProcessedBlockHeight} donate: ${donateTelegramMessages.length} | registry: ${registryTelegramMessages.length} | potfactory: ${potfactoryTelegramMessages.length}`
     );
 
     // combine all twitter messages

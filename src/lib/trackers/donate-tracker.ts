@@ -41,7 +41,6 @@ export async function trackDonate(startBlockHeight: number): Promise<TrackerResp
   // return an array of tweet messages
   const twitterMessages = await Promise.all(
     donateReceipts.map((receipt: any) => {
-      if (!receipt.recipientId) return null;
       const donateMessageArgs: DonateMessageArgs = {
         recipientId: receipt.parsedEvent.recipient_id || receipt.parsedArgs.recipient_id,
         donorId: receipt.parsedEvent.donor_id || receipt.sender,
